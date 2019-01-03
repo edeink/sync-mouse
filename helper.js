@@ -35,7 +35,7 @@ function getMouseClick(button) {
     }
 }
 
-export default {
+exports = module.exports = {
     KEY_MAP: KEY_MAP,
     getKeyModify: getKeyModify,
     getMouseClick: getMouseClick

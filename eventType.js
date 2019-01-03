@@ -6,4 +6,4 @@ const EVENT_TYPE =  {
     KEY_DOWN: 1,
 }
 
-export default EVENT_TYPE;
+exports = module.exports = EVENT_TYPE;

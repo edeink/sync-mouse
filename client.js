@@ -9,7 +9,7 @@ function send(obj) {
     // 创建udp报文
     const message = Buffer.from(JSON.stringify(obj));   
     const client = dgram.createSocket('udp4');
-    client.send(message, config.port, config.ip, (err) => {
+    client.send(message, config.port, config.serverIp, (err) => {
         client.close();
     });
 }

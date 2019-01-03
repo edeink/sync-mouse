@@ -3,4 +3,4 @@ const config = {
     port: 41234
 }
 
-export default config;
+exports = module.exports = config;
