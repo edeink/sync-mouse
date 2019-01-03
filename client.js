@@ -4,6 +4,9 @@ const ncp = require('copy-paste');
 const EVENT_TYPE = require('./eventType');
 const config = require('./config');
 
+function l() {
+    console.log(...arguments);
+}
 
 function send(obj) {
     // 创建udp报文
@@ -14,6 +17,18 @@ function send(obj) {
     });
 }
 
+ioHook.on("mousedown", event => {
+    send({
+        c: EVENT_TYPE.MOUSE_DOWN
+    })
+})
+
+ioHook.on("mouseup", event => {
+    send({
+        c: EVENT_TYPE.MOUSE_UP
+    })
+})
+
 ioHook.on("mouseclick", event => {
     send({
         c: EVENT_TYPE.MOUSE_CLICK,
@@ -21,11 +36,22 @@ ioHook.on("mouseclick", event => {
     })
 })
 
+ioHook.on("mousedrag", event => {
+    send({
+        c: EVENT_TYPE.MOSUE_DRAG,
+        p: {
+            x: event.x,
+            y: event.y
+        }
+    })
+})
+
 ioHook.on("mousewheel", event => {
+    l(event);
     send({
         c: EVENT_TYPE.MOUSE_WHEEL,
         a: event.amount,
-        d: event.direction === 3 ? 1 : 0
+        r: event.rotation
     })
 })
 
@@ -40,19 +66,23 @@ ioHook.on("mousemove", event => {
 });
 
 ioHook.on("keydown", event => {
-    let msg = {
-        c: EVENT_TYPE.KEY_DOWN,
-        k: {
-            k: event.keycode,
-        }
-    };
-    if (event.altKey) msg.k.a = 1;
-    if (event.shiftKey) msg.k.s = 1;
-    if (event.ctrlKey) msg.k.c = 1;
-    if (event.metaKey)msg.k.m = 1;
-    if (event.ctrlKey && event.keycode === 47) {
-        console.log(event);
+    if (event.ctrlKey && event.keycode === 46) {
+        ncp.paste(function(nothing, copyText) {
+            send({
+                c: EVENT_TYPE.COPY,
+                s: copyText
+            });
+        })
     } else {
+        let msg = {
+            c: EVENT_TYPE.KEY_DOWN,
+            k: event.keycode,
+            m: {},
+        };
+        if (event.altKey) msg.m.a = 1;
+        if (event.shiftKey) msg.m.s = 1;
+        if (event.ctrlKey) msg.m.c = 1;
+        if (event.metaKey) msg.m.m = 1;
         send(msg);
     }
 })
