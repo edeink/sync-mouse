@@ -11,18 +11,22 @@ const KEY_MAP = {
     61000: 'up', 61003: 'left', 61005: 'right', 61008: 'down', 
 }
 
-function getKeyModify(keyMsg) {
-    if(keyMsg.a) {
+function getKeyModify(modify) {
+    if(modify.a) {
         return 'alt'
-    } else if(keyMsg.s) {
+    } else if(modify.s) {
         return 'shift'
-    } else if(keyMsg.c) {
+    } else if(modify.c) {
         return 'ctrl'
-    } else if(keyMap.m) {
+    } else if(modify.m) {
         return 'meta'
     } else {
-        return false;
+        return undefined;
     }
+}
+
+function isKeyModify(modify) {
+    return [29, 3675].indexOf(modify) !== -1;
 }
 
 function getMouseClick(button) {
@@ -37,6 +41,7 @@ function getMouseClick(button) {
 
 exports = module.exports = {
     KEY_MAP: KEY_MAP,
+    isKeyModify: isKeyModify,
     getKeyModify: getKeyModify,
     getMouseClick: getMouseClick
 }
