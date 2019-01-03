@@ -1,17 +1,9 @@
 const dgram = require('dgram');
 const ioHook = require('iohook');
+const ncp = require('copy-paste');
+const EVENT_TYPE = require('./eventType');
+const config = require('./config');
 
-const config = {
-    ip: '10.13.145.53',
-    port: 41234
-}
-
-const EVENT_TYPE =  {
-    MOUSE_MOVE: 0,
-    MOUSE_CLICK: 2,
-    MOUSE_WHEEL: 3,
-    KEY_DOWN: 1,
-}
 
 function send(obj) {
     // 创建udp报文
@@ -58,10 +50,18 @@ ioHook.on("keydown", event => {
     if (event.shiftKey) msg.k.s = 1;
     if (event.ctrlKey) msg.k.c = 1;
     if (event.metaKey)msg.k.m = 1;
-    send(msg);
+    if (event.ctrlKey && event.keycode === 47) {
+        console.log(event);
+    } else {
+        send(msg);
+    }
 })
 
 ioHook.start();
+
+// ncp.paste(function(nothing, txt) {
+//     console.log(txt);
+// });
 
 // 监听键盘输入
 // var stdin = process.stdin;
