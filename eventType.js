@@ -9,6 +9,12 @@ const EVENT_TYPE =  {
     PASTE: 5,
     MOUSE_DOWN: 7,
     MOUSE_UP: 8,
+    ENTER_SCREEN: 9,
+    AFTER_ENTER: 10,
+    SEND_IP: 11,
+    RECIEVE_IP: 12,
+    LEAVE_SCREEN: 13,
+    AFTER_LEAVE: 14,
 }
 
 exports = module.exports = EVENT_TYPE;

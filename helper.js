@@ -23,6 +23,13 @@ const MOUSE_KEY_NAME = {
     3: 'middle'
 }
 
+const ENTER_DIRECTION = {
+    TOP: 0,
+    RIGHT: 1,
+    BOTTOM: 2,
+    LEFT: 3,
+}
+
 function getKeyModify(modify) {
     if(modify.a) {
         return 'alt'
@@ -55,6 +62,7 @@ exports = module.exports = {
     KEY_MAP,
     MOUSE_MAP,
     MOUSE_KEY_NAME,
+    ENTER_DIRECTION,
     isKeyModify,
     getMouseClick,
     getKeyModify,

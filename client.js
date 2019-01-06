@@ -5,13 +5,15 @@ const EVENT_TYPE = require('./eventType');
 const config = require('./config');
 const robot = require('robotjs');
 const helper = require('./helper');
+const clientServer = require('./clientServer');
+const interfaces = require('os').networkInterfaces(); // 在开发环境中获取局域网中的本机iP地址
 
 const dc = {
     isDebug: 1,
-    mouseMove: 0,
-    mouseClick: 1,
-    mouseWheel: 1,
-    mouseDrag: 1,
+    mouseMove: 1,
+    mouseClick: 0,
+    mouseWheel: 0,
+    mouseDrag: 0,
     keydown: 0,
     copy: 0,
 }
@@ -20,11 +22,15 @@ function l() {
     console.log(...arguments);
 }
 
-let screenSize = robot.getScreenSize();
+const screenSize = robot.getScreenSize();
+const screenWidth = screenSize.width;
+const screenHeight = screenSize.height; 
 let prePos = null;
 let isLock = false;
+let isLockAvailable = true; // 强制取消
 let isFixRightClick = false;
 let isFixDrag = false;
+let offset = 20;
 
 function getOffsetPos() {
     let currPos = robot.getMousePos();
@@ -43,92 +49,122 @@ function send(obj) {
     });
 }
 
-ioHook.on("mousedown", event => {
-    if (!isLock) { return; }
-    if (isFixRightClick) { return; }
-    if (dc.isDebug && dc.mouseDrag) {
-        l('down', JSON.stringify(event));
+ioHook.on("mousemove", event => {
+    if (isLockAvailable && isLock) {
+        let { x, y } = getOffsetPos();
+        if(Math.abs(x) <= 1 && Math.abs(y) <= 1) { return; }
+        if (dc.isDebug && dc.mouseMove) {    
+            l('move', JSON.stringify(event), x, y);
+        }
+        robot.moveMouse(prePos.x, prePos.y);
+        send({
+            c: EVENT_TYPE.MOUSE_MOVE, 
+            p: {
+                x: x,
+                y: y
+            }
+        });
+    } else {
+        let x = event.x;
+        let isEnter = !clientServer.isWaitingForEnter() && x < offset;
+        if (isEnter) {
+            clientServer.enter(function() {
+                let pos = robot.getMousePos();
+                pos.x = offset;
+                robot.moveMouse(offset, pos.y);
+                prePos = robot.getMousePos();
+                isLock = true;
+                l('after enter');
+            });
+            clientServer.leave(function() {
+                isLock = false;
+                isLockAvailable = false;
+                setTimeout(function() {
+                    isLockAvailable = true;
+                }, 500);
+                l('after leave');
+            });
+        }
     }
-    send({
-        c: EVENT_TYPE.MOUSE_DOWN
-    })
+});
+
+ioHook.on("mousedown", event => {
+    if (isLockAvailable && isLock) {
+        if (isFixRightClick) { return; }
+        if (dc.isDebug && dc.mouseDrag) {
+            l('down', JSON.stringify(event));
+        }
+        send({
+            c: EVENT_TYPE.MOUSE_DOWN
+        })
+    }
 })
 
 ioHook.on("mouseup", event => {
-    if (!isLock) { return; }
-    if (isFixRightClick) { isFixRightClick = false; return; }
-    if (dc.isDebug && dc.mouseDrag) {
-        l('up', JSON.stringify(event));
+    if (isLockAvailable && isLock) {
+        if (isFixRightClick) { isFixRightClick = false; return; }
+        if (dc.isDebug && dc.mouseDrag) {
+            l('up', JSON.stringify(event));
+        }
+        send({
+            c: EVENT_TYPE.MOUSE_UP
+        })
     }
-    send({
-        c: EVENT_TYPE.MOUSE_UP
-    })
 })
 
 ioHook.on("mouseclick", event => {
-    if (!isLock) { return; }
-    if (isFixRightClick) { isFixRightClick = false; return; }
-    if (isFixDrag) { isFixDrag = false; return; }
-    if (dc.isDebug && dc.mouseClick) {    
-        l('click', JSON.stringify(event));
+    if (isLockAvailable && isLock) { 
+        if (isFixRightClick) { isFixRightClick = false; return; }
+        if (isFixDrag) { isFixDrag = false; return; }
+        if (dc.isDebug && dc.mouseClick) {    
+            l('click', JSON.stringify(event));
+        }
+        // 仅右键才发送, 左键将被up & down 取代
+        if (event.button === helper.MOUSE_MAP.RIGHT) {
+            isFixRightClick = true;
+            robot.mouseClick();
+            send({
+                c: EVENT_TYPE.MOUSE_CLICK,
+                b: event.button,
+            })
+        }
     }
-    // 消除右键菜单影响
-    if (event.button === helper.MOUSE_MAP.RIGHT) {
-        isFixRightClick = true;
-        robot.mouseClick();
-    }
-    send({
-        c: EVENT_TYPE.MOUSE_CLICK,
-        b: event.button,
-    })
 })
 
 ioHook.on("mousedrag", event => {
-    if (!isLock) { return; }
-    if (dc.isDebug && dc.mouseDrag) {
-        l('drag', JSON.stringify(event));
-    }
-    if (!isFixDrag) {
-        isFixDrag = true;
-    }
-    let { x, y } = getOffsetPos();
-    robot.moveMouse(prePos.x, prePos.y);
-    send({
-        c: EVENT_TYPE.MOSUE_DRAG,
-        p: {
-            x: x,
-            y: y
+    if (isLockAvailable && isLock) { 
+        if (dc.isDebug && dc.mouseDrag) {
+            l('drag', JSON.stringify(event));
         }
-    })
+        if (!isFixDrag) {
+            isFixDrag = true;
+        }
+        let { x, y } = getOffsetPos();
+        if(x === 0 && y === 0) { return; }
+        robot.moveMouse(prePos.x, prePos.y);
+        send({
+            c: EVENT_TYPE.MOSUE_DRAG,
+            p: {
+                x: x,
+                y: y
+            }
+        })
+    }
 })
 
 ioHook.on("mousewheel", event => {
-    if (!isLock) { return; }
-    if (dc.isDebug && dc.mouseWheel) {    
-        l('wheel', JSON.stringify(event));
-    }
-    send({
-        c: EVENT_TYPE.MOUSE_WHEEL,
-        a: event.amount,
-        r: event.rotation
-    })
-})
-
-ioHook.on("mousemove", event => {
-    if (!isLock) { return; }
-    if (dc.isDebug && dc.mouseMove) {    
-        l('move', JSON.stringify(event));
-    }
-    let { x, y } = getOffsetPos();
-    robot.moveMouse(prePos.x, prePos.y);
-    send({
-        c: EVENT_TYPE.MOUSE_MOVE, 
-        p: {
-            x: x,
-            y: y
+    if (isLockAvailable && isLock) { 
+        if (dc.isDebug && dc.mouseWheel) {    
+            l('wheel', JSON.stringify(event));
         }
-    });
-});
+        let msg = {
+            c: EVENT_TYPE.MOUSE_WHEEL,
+            a: event.amount,
+            r: event.rotation
+        }
+        send(msg);
+    }
+})
 
 ioHook.on("keydown", event => {
     if(dc.isDebug && dc.keydown) {    
@@ -149,11 +185,20 @@ ioHook.on("keydown", event => {
         switch(keycode) {
             case 26: {
                 isLock = true;
+                isLockAvailable = true;
                 prePos = robot.getMousePos();
+                l('force enter lock');
                 break;
             }
             case 27: {
-                isLock = false;
+                isLockAvailable = false;
+                // 500 毫秒内不允许Lock
+                setTimeout(function() {
+                    isLock = false;
+                    isLockAvailable = true;
+                }, 500);
+                robot.moveMouse(screenWidth / 2, screenHeight / 2);
+                l('force exit lock');
                 break;
             }
 
@@ -173,27 +218,11 @@ ioHook.on("keydown", event => {
         if (event.shiftKey) msg.m.s = 1;
         if (event.ctrlKey) msg.m.c = 1;
         if (event.metaKey) msg.m.m = 1;
+        l('keydown1', msg);
         send(msg);
     }
 })
 
 ioHook.start();
 
-// ncp.paste(function(nothing, txt) {
-//     console.log(txt);
-// });
-
-// 监听键盘输入
-// var stdin = process.stdin;
-// stdin.setRawMode( true );
-// stdin.resume();
-// stdin.setEncoding( 'utf8' );
-// stdin.on('data', function( key ){
-//     if (key === '\u0003') {
-//         process.exit();
-//     }
-//     send({
-//         c: EVENT_TYPE.KEYBOAR,
-//         k: key
-//     })
-// });
+clientServer.init();
