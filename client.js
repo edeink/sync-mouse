@@ -3,9 +3,35 @@ const ioHook = require('iohook');
 const ncp = require('copy-paste');
 const EVENT_TYPE = require('./eventType');
 const config = require('./config');
+const robot = require('robotjs');
+const helper = require('./helper');
+
+const dc = {
+    isDebug: 1,
+    mouseMove: 0,
+    mouseClick: 1,
+    mouseWheel: 1,
+    mouseDrag: 1,
+    keydown: 0,
+    copy: 0,
+}
 
 function l() {
     console.log(...arguments);
+}
+
+let screenSize = robot.getScreenSize();
+let prePos = null;
+let isLock = false;
+let isFixRightClick = false;
+let isFixDrag = false;
+
+function getOffsetPos() {
+    let currPos = robot.getMousePos();
+    return {
+        x: currPos.x - prePos.x,
+        y: currPos.y - prePos.y
+    }
 }
 
 function send(obj) {
@@ -18,18 +44,39 @@ function send(obj) {
 }
 
 ioHook.on("mousedown", event => {
+    if (!isLock) { return; }
+    if (isFixRightClick) { return; }
+    if (dc.isDebug && dc.mouseDrag) {
+        l('down', JSON.stringify(event));
+    }
     send({
         c: EVENT_TYPE.MOUSE_DOWN
     })
 })
 
 ioHook.on("mouseup", event => {
+    if (!isLock) { return; }
+    if (isFixRightClick) { isFixRightClick = false; return; }
+    if (dc.isDebug && dc.mouseDrag) {
+        l('up', JSON.stringify(event));
+    }
     send({
         c: EVENT_TYPE.MOUSE_UP
     })
 })
 
 ioHook.on("mouseclick", event => {
+    if (!isLock) { return; }
+    if (isFixRightClick) { isFixRightClick = false; return; }
+    if (isFixDrag) { isFixDrag = false; return; }
+    if (dc.isDebug && dc.mouseClick) {    
+        l('click', JSON.stringify(event));
+    }
+    // 消除右键菜单影响
+    if (event.button === helper.MOUSE_MAP.RIGHT) {
+        isFixRightClick = true;
+        robot.mouseClick();
+    }
     send({
         c: EVENT_TYPE.MOUSE_CLICK,
         b: event.button,
@@ -37,17 +84,29 @@ ioHook.on("mouseclick", event => {
 })
 
 ioHook.on("mousedrag", event => {
+    if (!isLock) { return; }
+    if (dc.isDebug && dc.mouseDrag) {
+        l('drag', JSON.stringify(event));
+    }
+    if (!isFixDrag) {
+        isFixDrag = true;
+    }
+    let { x, y } = getOffsetPos();
+    robot.moveMouse(prePos.x, prePos.y);
     send({
         c: EVENT_TYPE.MOSUE_DRAG,
         p: {
-            x: event.x,
-            y: event.y
+            x: x,
+            y: y
         }
     })
 })
 
 ioHook.on("mousewheel", event => {
-    l(event);
+    if (!isLock) { return; }
+    if (dc.isDebug && dc.mouseWheel) {    
+        l('wheel', JSON.stringify(event));
+    }
     send({
         c: EVENT_TYPE.MOUSE_WHEEL,
         a: event.amount,
@@ -56,24 +115,55 @@ ioHook.on("mousewheel", event => {
 })
 
 ioHook.on("mousemove", event => {
+    if (!isLock) { return; }
+    if (dc.isDebug && dc.mouseMove) {    
+        l('move', JSON.stringify(event));
+    }
+    let { x, y } = getOffsetPos();
+    robot.moveMouse(prePos.x, prePos.y);
     send({
         c: EVENT_TYPE.MOUSE_MOVE, 
         p: {
-            x: event.x,
-            y: event.y
+            x: x,
+            y: y
         }
     });
 });
 
 ioHook.on("keydown", event => {
-    if (event.ctrlKey && event.keycode === 46) {
+    if(dc.isDebug && dc.keydown) {    
+        l('keydown', JSON.stringify(event));
+    }
+    let keycode = event.keycode;
+    // 复制
+    if (event.ctrlKey && keycode === 46) {
         ncp.paste(function(nothing, copyText) {
             send({
                 c: EVENT_TYPE.COPY,
                 s: copyText
             });
         })
-    } else {
+    } 
+    // 自定义热键
+    else if (event.ctrlKey && event.altKey && helper.isCtrlGlobalKey(keycode)) {
+        switch(keycode) {
+            case 26: {
+                isLock = true;
+                prePos = robot.getMousePos();
+                break;
+            }
+            case 27: {
+                isLock = false;
+                break;
+            }
+
+        }
+    }
+    // 普通键盘
+    else {
+        if (!isLock) {
+            return;
+        }
         let msg = {
             c: EVENT_TYPE.KEY_DOWN,
             k: event.keycode,
