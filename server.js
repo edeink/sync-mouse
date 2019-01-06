@@ -7,22 +7,50 @@ const config = require('./config');
 const helper = require('./helper');
 const EVENT_TYPE = require('./eventType');
 const ncp = require('copy-paste');
+const serverClient = require('./serverClient');
+serverClient.init();
 
 const server = dgram.createSocket('udp4');
 const keyMap = helper.KEY_MAP;
+const enterOffset = 50;
+
+
+const screenSize = robot.getScreenSize();
+const screenWidth = screenSize.width;
+const screenHeight = screenSize.height; 
+const offset = 20;
+
+let clickPos = robot.getMousePos();
+
+const dc = {
+    isDebug: 1,
+    mouseMove: 1,
+    mouseClick: 1,
+    mouseWheel: 1,
+    mouseDrag: 1,
+    keyDown: 1,
+    copy: 1,
+}
 
 function l() {
     console.log(...arguments)
 }
 
-const dc = {
-    isDebug : 1,
-    mouseMove: 1,
-    mouseClick: 0,
-    mouseWheel: 1,
-    mouseDrag: 1,
-    keyDown: 0,
-    copy: 1,
+function getNextPos(offsetPos) {
+    let currPos = robot.getMousePos();
+    return {
+        x: currPos.x + offsetPos.x,
+        y: currPos.y + offsetPos.y
+    }
+}
+
+function getDragPos(offsetPos) {
+    clickPos.x += offsetPos.x;
+    clickPos.y += offsetPos.y;
+    return {
+        x: clickPos.x,
+        y: clickPos.y
+    }
 }
 
 // 处理器
@@ -31,13 +59,23 @@ const cmdHandler = {
         if (dc.isDebug && !dc.mouseMove) {
             return;
         }
-        let position = cmd.p;
-        robot.moveMouse(position.x, position.y);
+        // l('move', cmd);
+        if (serverClient.isActive()) {
+            let { x, y } = getNextPos(cmd.p);
+            x = x > screenWidth ? screenWidth : x;
+            y = y > screenHeight ? screenHeight : y;
+            robot.moveMouse(x, y);
+            // 判断是否出界
+            if (x > screenWidth - offset) {
+                serverClient.leave();
+            }
+        }
     },
     handleKeyDown: function(cmd) {
         if (dc.isDebug && !dc.keyDown) {
             return;
         }
+        l('keydown', cmd);
         let keyMsg = cmd.k;
         let isModify = helper.isKeyModify(cmd.k);
         if (!isModify) {
@@ -58,10 +96,10 @@ const cmdHandler = {
         if (dc.isDebug && !dc.mouseWheel) {
             return;
         }
+        l('wheel', cmd);
         let amount = cmd.a;
         let rotation = cmd.r;
         let wheelY = 0;
-        // let position = robot.getMousePos();
         if(rotation === 1) {
             wheelY = wheelY - amount * 10;
         } else if (rotation === -1) {
@@ -73,6 +111,7 @@ const cmdHandler = {
         if(dc.isDebug && !dc.mouseClick) {
             return;
         }
+        l('click', cmd);
         let button = helper.getMouseClick(cmd.b);
         robot.mouseClick(button);
     },
@@ -80,26 +119,48 @@ const cmdHandler = {
         if(dc.isDebug && !dc.mouseDrag) {
             return;
         }
-        let position = cmd.p;
-        robot.dragMouse(position.x, position.y);
+        l('drag', cmd);
+        let { x, y } = getDragPos(cmd.p);
+        robot.dragMouse(x, y);
     },
     handleMouseDown: function(cmd) {
         if(dc.isDebug && !dc.mouseDrag) {
             return;
         }
+        l('down', cmd);
+        clickPos = robot.getMousePos();
         robot.mouseToggle("down");
     },
     handleMouseUp: function(cmd) {
         if(dc.isDebug && !dc.mouseDrag) {
             return;
         }
+        l('up', cmd);
         robot.mouseToggle("up");
     },
     handleCopy: function(cmd) {
         if (dc.isDebug && !dc.copy) {
             return;
         }
+        l('copy', cmd);
         ncp.copy(cmd.s);
+    },
+    handleEnter: function(cmd) {
+        if (dc.isDebug && !dc.mouseMove) {
+            return;
+        }
+        // l('enter', cmd);
+        let position = cmd.p;
+        let direction = cmd.d;
+        if (direction === helper.ENTER_DIRECTION.LEFT) {
+            let x = screenWidth - enterOffset;
+            let y = screenHeight * position.yp;
+            robot.moveMouse(x, y);
+            serverClient.active();
+        }
+    },
+    handleRecieveIp: function(cmd) {
+        serverClient.addIp(cmd.addr);
     }
 }
 
@@ -113,6 +174,9 @@ server.on('message', (msg, rinfo) => {
     let cmd = JSON.parse(msg.toString());
     if (cmd) {
         switch(cmd.c) {
+            case EVENT_TYPE.SEND_IP:
+                cmdHandler.handleRecieveIp(cmd);
+                break;
             case EVENT_TYPE.MOUSE_MOVE:
                 cmdHandler.handleMouseMove(cmd);
                 break;
@@ -121,12 +185,6 @@ server.on('message', (msg, rinfo) => {
                 break;
             case EVENT_TYPE.MOUSE_WHEEL:
                 cmdHandler.handleMouseWheel(cmd);
-                break;
-            case EVENT_TYPE.KEY_DOWN:
-                cmdHandler.handleKeyDown(cmd);
-                break;
-            case EVENT_TYPE.COPY: 
-                cmdHandler.handleCopy(cmd);
                 break;
             case EVENT_TYPE.MOSUE_DRAG:
                 cmdHandler.handleMouseDrag(cmd);
@@ -137,6 +195,15 @@ server.on('message', (msg, rinfo) => {
             case EVENT_TYPE.MOUSE_UP:
                 cmdHandler.handleMouseUp(cmd);
                 break;
+            case EVENT_TYPE.KEY_DOWN:
+                cmdHandler.handleKeyDown(cmd);
+                break;
+            case EVENT_TYPE.COPY: 
+                cmdHandler.handleCopy(cmd);
+                break;
+            case EVENT_TYPE.ENTER_SCREEN:
+                cmdHandler.handleEnter(cmd);
+                break;
             default:
                 l('未能识别的命令：', cmd);
         }
@@ -144,8 +211,7 @@ server.on('message', (msg, rinfo) => {
 });
 
 server.on('listening', () => {
-    const address = server.address();
-    // l(`server listening ${address.address}:${address.port}`);
+   
 });
 
 server.bind(config.port);
