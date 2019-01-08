@@ -1,9 +1,11 @@
 const dgram = require('dgram');
 const ioHook = require('iohook');
-const ncp = require('copy-paste');
-const EVENT_TYPE = require('./eventType');
-const config = require('./config');
+const EVENT_TYPE = require('../config/eventType');
+const config = require('../config/config');
 const robot = require('robotjs');
+
+const connectHelper = require('../helper/connectHelper');
+const send = connectHelper.send;
 
 const ips = new Set();
 
@@ -16,27 +18,7 @@ function l() {
     console.log(...arguments);
 }
 
-function send(obj, ip) {
-    if (ip) {
-        const message = Buffer.from(JSON.stringify(obj));   
-        const client = dgram.createSocket('udp4');
-        client.send(message, config.port, ip, (err) => {
-            client.close();
-        });
-    } else if(ips.size > 0) {
-        ips.forEach(function(eachIp) {
-            l('leave');
-            const message = Buffer.from(JSON.stringify(obj));   
-            const client = dgram.createSocket('udp4');
-            client.send(message, config.port, eachIp, (err) => {
-                client.close();
-            });
-        });
-    }
-}
-
 const serverClient = {
-    send: send,
     init: function() {
         // ioHook.on("keydown", event => {
         //     let keycode = event.keycode;

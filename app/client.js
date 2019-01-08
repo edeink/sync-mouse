@@ -1,12 +1,12 @@
-const dgram = require('dgram');
 const ioHook = require('iohook');
 const ncp = require('copy-paste');
-const EVENT_TYPE = require('./eventType');
-const config = require('./config');
+const EVENT_TYPE = require('../config/eventType');
 const robot = require('robotjs');
-const helper = require('./helper');
 const clientServer = require('./clientServer');
-const interfaces = require('os').networkInterfaces(); // 在开发环境中获取局域网中的本机iP地址
+const eventHelper = require('../helper/eventHelper');
+const connectHelper = require('../helper/connectHelper');
+
+const send = connectHelper.send;
 
 const dc = {
     isDebug: 1,
@@ -38,15 +38,6 @@ function getOffsetPos() {
         x: currPos.x - prePos.x,
         y: currPos.y - prePos.y
     }
-}
-
-function send(obj) {
-    // 创建udp报文
-    const message = Buffer.from(JSON.stringify(obj));   
-    const client = dgram.createSocket('udp4');
-    client.send(message, config.port, config.serverIp, (err) => {
-        client.close();
-    });
 }
 
 ioHook.on("mousemove", event => {
@@ -120,7 +111,7 @@ ioHook.on("mouseclick", event => {
             l('click', JSON.stringify(event));
         }
         // 仅右键才发送, 左键将被up & down 取代
-        if (event.button === helper.MOUSE_MAP.RIGHT) {
+        if (event.button === eventHelper.MOUSE_MAP.RIGHT) {
             isFixRightClick = true;
             robot.mouseClick();
             send({
@@ -181,7 +172,7 @@ ioHook.on("keydown", event => {
         })
     } 
     // 自定义热键
-    else if (event.ctrlKey && event.altKey && helper.isCtrlGlobalKey(keycode)) {
+    else if (event.ctrlKey && event.altKey && eventHelper.isCtrlGlobalKey(keycode)) {
         switch(keycode) {
             case 26: {
                 isLock = true;
@@ -218,7 +209,6 @@ ioHook.on("keydown", event => {
         if (event.shiftKey) msg.m.s = 1;
         if (event.ctrlKey) msg.m.c = 1;
         if (event.metaKey) msg.m.m = 1;
-        l('keydown1', msg);
         send(msg);
     }
 })

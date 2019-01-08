@@ -12,4 +12,5 @@
 ## 使用方式
 
 1. 检查网络，保证局域网内，两台电脑可以互ping（即两台电脑可以建立连接）
-2. `node client.js` or `node server.js`
+2. 服务端：`npm run s`
+3. 客户端: `npm run c`

@@ -3,15 +3,16 @@
  */
 const dgram = require('dgram');
 const robot = require('robotjs');
-const config = require('./config');
-const helper = require('./helper');
-const EVENT_TYPE = require('./eventType');
+const config = require('../config/config');
+const EVENT_TYPE = require('../config/eventType');
 const ncp = require('copy-paste');
 const serverClient = require('./serverClient');
 serverClient.init();
 
+const eventHelper = require('../helper/eventHelper');
+
 const server = dgram.createSocket('udp4');
-const keyMap = helper.KEY_MAP;
+const keyMap = eventHelper.KEY_MAP;
 const enterOffset = 50;
 
 
@@ -77,11 +78,11 @@ const cmdHandler = {
         }
         l('keydown', cmd);
         let keyMsg = cmd.k;
-        let isModify = helper.isKeyModify(cmd.k);
+        let isModify = eventHelper.isKeyModify(cmd.k);
         if (!isModify) {
             let refCode = keyMap[keyMsg];
             if(refCode) {
-                let modify = helper.getKeyModify(cmd.m);
+                let modify = eventHelper.getKeyModify(cmd.m);
                 if (modify) {
                     
                 } else {
@@ -112,7 +113,7 @@ const cmdHandler = {
             return;
         }
         l('click', cmd);
-        let button = helper.getMouseClick(cmd.b);
+        let button = eventHelper.getMouseClick(cmd.b);
         robot.mouseClick(button);
     },
     handleMouseDrag: function(cmd) {
@@ -152,7 +153,7 @@ const cmdHandler = {
         // l('enter', cmd);
         let position = cmd.p;
         let direction = cmd.d;
-        if (direction === helper.ENTER_DIRECTION.LEFT) {
+        if (direction === eventHelper.ENTER_DIRECTION.LEFT) {
             let x = screenWidth - enterOffset;
             let y = screenHeight * position.yp;
             robot.moveMouse(x, y);

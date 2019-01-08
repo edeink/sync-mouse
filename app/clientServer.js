@@ -2,14 +2,22 @@
  * Created by edeity on 2018/5/2.
  */
 const dgram = require('dgram');
-const config = require('./config');
-const EVENT_TYPE = require('./eventType');
 const ncp = require('copy-paste');
-const helper = require('./helper');
 const robot = require('robotjs');
-const interfaces = require('os').networkInterfaces(); // 在开发环境中获取局域网中的本机iP地址
+
+const config = require('../config/config');
+const EVENT_TYPE = require('../config/eventType');
+
+const eventHelper = require('../helper/eventHelper');
+const connectHelper = require('../helper/connectHelper');
 
 const server = dgram.createSocket('udp4');
+const send = connectHelper.send;
+const localAddress = connectHelper.getlocalAddress();
+
+const screenSize = robot.getScreenSize();
+const screenWidth = screenSize.width;
+const screenHeight = screenSize.height; 
 
 function l() {
     console.log(...arguments)
@@ -20,30 +28,7 @@ const dc = {
     copy: 1,
 }
 
-const screenSize = robot.getScreenSize();
-const screenWidth = screenSize.width;
-const screenHeight = screenSize.height; 
-
 // 获取本机IP地址
-let localAddress = '';
-for(var devName in interfaces){  
-    var iface = interfaces[devName];  
-    for(var i=0;i<iface.length;i++){  
-        var alias = iface[i];  
-        if(alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal){  
-            localAddress = alias.address;  
-        }  
-    }  
-} 
-
-function send(obj) {
-    // 创建udp报文
-    const message = Buffer.from(JSON.stringify(obj));   
-    const client = dgram.createSocket('udp4');
-    client.send(message, config.port, config.serverIp, (err) => {
-        client.close();
-    });
-}
 
 const clientServer = {
     init: function() {
@@ -105,7 +90,7 @@ const clientServer = {
         return clientServer._waitforEnter;
     },
     enter: function(callback) {
-        let direction = helper.ENTER_DIRECTION.LEFT;
+        let direction = eventHelper.ENTER_DIRECTION.LEFT;
         let pos = robot.getMousePos();
         clientServer._waitforEnter = true;
         clientServer._afterLeave = null;
