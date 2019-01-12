@@ -30,6 +30,19 @@ const ENTER_DIRECTION = {
     LEFT: 3,
 }
 
+// 和ENTER_DIRECTION的值刚好相反
+const LEAVE_DIRECTION = {
+    TOP: 2,
+    RIGHT: 3,
+    BOTTOM: 0,
+    LEFT: 1,
+}
+
+const OFFSET = {
+    LEAVE: 10, // 监听离开的距离
+    ENTER: 50, // 进入时即偏移的距离
+}
+
 function getKeyModify(modify) {
     if(modify.a) {
         return 'alt'
@@ -63,6 +76,8 @@ exports = module.exports = {
     MOUSE_MAP,
     MOUSE_KEY_NAME,
     ENTER_DIRECTION,
+    LEAVE_DIRECTION,
+    OFFSET,
     isKeyModify,
     getMouseClick,
     getKeyModify,

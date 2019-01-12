@@ -9,13 +9,6 @@ let ip = null;
 let screenSize = null;
 
 
-const SCREEN_DIRECTION = {
-    TOP: 'TOP',
-    RIGTH: 'RIGHT',
-    BOTTOM: 'BOTTOM',
-    LEFT: 'LEFT',
-}
-
 // 获取本机局域网Ip
 function getLocalIp() {
     let networkKeys = Object.keys(interfaces);
@@ -70,7 +63,6 @@ function getLocalScreenSize() {
 }
 
 exports = module.exports = {
-    SCREEN_DIRECTION,
     getLocalAddress,
     getLocalScreenSize,
     send,

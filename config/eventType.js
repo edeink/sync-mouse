@@ -17,6 +17,8 @@ const EVENT_TYPE =  {
     RECIEVE_IP: 12,
     LEAVE_SCREEN: 13,
     AFTER_LEAVE: 14,
+    QUERY_ACTIVE: 15,
+    RECIEVE_ACTIVE: 16,
 }
 
 exports = module.exports = EVENT_TYPE;
