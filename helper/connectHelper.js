@@ -1,9 +1,20 @@
 const dgram = require('dgram');
+const robot = require('robotjs');
 const interfaces = require('os').networkInterfaces();
+
 const config = require('../config/config');
 
 
 let ip = null;
+let screenSize = null;
+
+
+const SCREEN_DIRECTION = {
+    TOP: 'TOP',
+    RIGTH: 'RIGHT',
+    BOTTOM: 'BOTTOM',
+    LEFT: 'LEFT',
+}
 
 // 获取本机局域网Ip
 function getLocalIp() {
@@ -18,6 +29,7 @@ function getLocalIp() {
             return false;
         })
     });
+    return ip;
 }
 
 function _send(obj, ip, port) {
@@ -30,8 +42,8 @@ function _send(obj, ip, port) {
 
 // 发送udp报文
 function send(obj, ips, port) {
-    let realPort = port ? prot : config.port;
-    if(Array.isArray(ips)) {
+    let realPort = port ? port : config.port;
+    if(ips && ips.forEach) {
         ips.forEach(function(eachIp) {
             _send(obj, eachIp, realPort);
         })
@@ -41,11 +53,25 @@ function send(obj, ips, port) {
     }
 }
 
-function getlocalAddress() {
+function getLocalAddress() {
     return ip ? ip : getLocalIp();
 }
 
+function getLocalScreenSize() {
+    if (screenSize) {
+        return screenSize;
+    } else {
+        let screenSize = robot.getScreenSize();
+        return {
+            screenWidth: screenSize.width,
+            screenHeight: screenSize.height,
+        }
+    }
+}
+
 exports = module.exports = {
-    getlocalAddress,
+    SCREEN_DIRECTION,
+    getLocalAddress,
+    getLocalScreenSize,
     send,
 }

@@ -1,12 +1,16 @@
 const ioHook = require('iohook');
 const ncp = require('copy-paste');
-const EVENT_TYPE = require('../config/eventType');
 const robot = require('robotjs');
+
+const EVENT_TYPE = require('../config/eventType');
+const config = require('../config/config');
 const clientServer = require('./clientServer');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
 
 const send = connectHelper.send;
+const SCREEN_DIRECTION = connectHelper.SCREEN_DIRECTION;
+const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
 
 const dc = {
     isDebug: 1,
@@ -22,9 +26,6 @@ function l() {
     console.log(...arguments);
 }
 
-const screenSize = robot.getScreenSize();
-const screenWidth = screenSize.width;
-const screenHeight = screenSize.height; 
 let prePos = null;
 let isLock = false;
 let isLockAvailable = true; // 强制取消
@@ -40,9 +41,8 @@ function getOffsetPos() {
     }
 }
 
-ioHook.on("mousemove", event => {
-    if (isLockAvailable && isLock) {
-        let { x, y } = getOffsetPos();
+const clientHandler = {
+    handleMove: function(x, y) {
         if(Math.abs(x) <= 1 && Math.abs(y) <= 1) { return; }
         if (dc.isDebug && dc.mouseMove) {    
             l('move', JSON.stringify(event), x, y);
@@ -55,9 +55,28 @@ ioHook.on("mousemove", event => {
                 y: y
             }
         });
-    } else {
-        let x = event.x;
-        let isEnter = !clientServer.isWaitingForEnter() && x < offset;
+    },
+    handleEnter: function(x, y) {
+        let isEnter = false;
+        if (!clientServer.isWaitingForEnter()) {
+            switch (config.direction) {
+                case SCREEN_DIRECTION.LEFT: {
+                    isEnter = x < offset;
+                    break;
+                }
+                case SCREEN_DIRECTION.TOP: {
+                    isEnter = y < offset;
+                    break;
+                }
+                case SCREEN_DIRECTION.RIGHT: {
+                    isEnter = x > screenWidth - offset;
+                    break;
+                }
+                case SCREEN_DIRECTION.BOTTOM: {
+                    isEnter = Y > screenWidth - offset;
+                }
+            }
+        }
         if (isEnter) {
             clientServer.enter(function() {
                 let pos = robot.getMousePos();
@@ -76,6 +95,16 @@ ioHook.on("mousemove", event => {
                 l('after leave');
             });
         }
+    }
+}
+
+ioHook.on("mousemove", event => {
+    if (isLockAvailable && isLock) {
+        let { x, y } = getOffsetPos();
+        clientHandler.handleMove(x, y);
+    } else {
+        let {x, y} = event;
+        clientHandler.handleEnter(x, y);
     }
 });
 
@@ -170,9 +199,8 @@ ioHook.on("keydown", event => {
                 s: copyText
             });
         })
-    } 
-    // 自定义热键
-    else if (event.ctrlKey && event.altKey && eventHelper.isCtrlGlobalKey(keycode)) {
+    } else if (event.ctrlKey && event.altKey && eventHelper.isCtrlGlobalKey(keycode)) {    
+        // 自定义热键
         switch(keycode) {
             case 26: {
                 isLock = true;
@@ -194,9 +222,8 @@ ioHook.on("keydown", event => {
             }
 
         }
-    }
-    // 普通键盘
-    else {
+    } else {
+        // 普通键盘
         if (!isLock) {
             return;
         }

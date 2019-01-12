@@ -1,27 +1,24 @@
-/**
- * Created by edeity on 2018/5/2.
- */
 const dgram = require('dgram');
 const robot = require('robotjs');
+const ncp = require('copy-paste');
+
 const config = require('../config/config');
 const EVENT_TYPE = require('../config/eventType');
-const ncp = require('copy-paste');
 const serverClient = require('./serverClient');
-serverClient.init();
-
 const eventHelper = require('../helper/eventHelper');
+const connectHelper = require('../helper/connectHelper');
 
 const server = dgram.createSocket('udp4');
+
 const keyMap = eventHelper.KEY_MAP;
+const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
+
 const enterOffset = 50;
-
-
-const screenSize = robot.getScreenSize();
-const screenWidth = screenSize.width;
-const screenHeight = screenSize.height; 
 const offset = 20;
 
 let clickPos = robot.getMousePos();
+
+serverClient.init();
 
 const dc = {
     isDebug: 1,

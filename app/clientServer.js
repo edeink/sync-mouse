@@ -13,11 +13,8 @@ const connectHelper = require('../helper/connectHelper');
 
 const server = dgram.createSocket('udp4');
 const send = connectHelper.send;
-const localAddress = connectHelper.getlocalAddress();
-
-const screenSize = robot.getScreenSize();
-const screenWidth = screenSize.width;
-const screenHeight = screenSize.height; 
+const localAddress = connectHelper.getLocalAddress();
+const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
 
 function l() {
     console.log(...arguments)
@@ -94,7 +91,12 @@ const clientServer = {
         let pos = robot.getMousePos();
         clientServer._waitforEnter = true;
         clientServer._afterLeave = null;
+        let timeoutKey = setTimeout(function() {
+            clientServer._waitforEnter = false;
+            l('暂时无法连接服务器, 请稍后再试');
+        }, config.timeout);
         clientServer._afterEnter = function() {
+            clearTimeout(timeoutKey);
             clientServer._waitforEnter = false;
             clientServer._isActive = true;
             callback && callback();
@@ -134,7 +136,7 @@ const clientServer = {
                     addr: localAddress,
                 })
             }
-        }, 3000);
+        }, config.timeout);
     },
     finishSendIp() {
         l('finish send ip');

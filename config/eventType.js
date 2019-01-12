@@ -1,4 +1,6 @@
-
+/**
+ * 通讯事件
+ */
 const EVENT_TYPE =  {
     MOUSE_MOVE: 0,
     KEY_DOWN: 1,
