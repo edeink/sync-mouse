@@ -11,10 +11,8 @@ const connectHelper = require('../helper/connectHelper');
 const server = dgram.createSocket('udp4');
 
 const keyMap = eventHelper.KEY_MAP;
+const OFFSET = eventHelper.OFFSET;
 const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
-
-const enterOffset = 50;
-const offset = 20;
 
 let clickPos = robot.getMousePos();
 
@@ -51,118 +49,7 @@ function getDragPos(offsetPos) {
     }
 }
 
-// 处理器
-const cmdHandler = {
-    handleMouseMove: function(cmd) {
-        if (dc.isDebug && !dc.mouseMove) {
-            return;
-        }
-        // l('move', cmd);
-        if (serverClient.isActive()) {
-            let { x, y } = getNextPos(cmd.p);
-            x = x > screenWidth ? screenWidth : x;
-            y = y > screenHeight ? screenHeight : y;
-            robot.moveMouse(x, y);
-            // 判断是否出界
-            if (x > screenWidth - offset) {
-                serverClient.leave();
-            }
-        }
-    },
-    handleKeyDown: function(cmd) {
-        if (dc.isDebug && !dc.keyDown) {
-            return;
-        }
-        l('keydown', cmd);
-        let keyMsg = cmd.k;
-        let isModify = eventHelper.isKeyModify(cmd.k);
-        if (!isModify) {
-            let refCode = keyMap[keyMsg];
-            if(refCode) {
-                let modify = eventHelper.getKeyModify(cmd.m);
-                if (modify) {
-                    
-                } else {
-                    robot.keyTap(refCode);
-                }
-            } else {
-                l('未支持键盘类型：', keyMsg);
-            }
-        }
-    },
-    handleMouseWheel: function(cmd) {
-        if (dc.isDebug && !dc.mouseWheel) {
-            return;
-        }
-        l('wheel', cmd);
-        let amount = cmd.a;
-        let rotation = cmd.r;
-        let wheelY = 0;
-        if(rotation === 1) {
-            wheelY = wheelY - amount * 10;
-        } else if (rotation === -1) {
-            wheelY = wheelY + amount * 10;
-        }
-        robot.scrollMouse(0, wheelY);
-    },
-    handleMouseClick: function(cmd) {
-        if(dc.isDebug && !dc.mouseClick) {
-            return;
-        }
-        l('click', cmd);
-        let button = eventHelper.getMouseClick(cmd.b);
-        robot.mouseClick(button);
-    },
-    handleMouseDrag: function(cmd) {
-        if(dc.isDebug && !dc.mouseDrag) {
-            return;
-        }
-        l('drag', cmd);
-        let { x, y } = getDragPos(cmd.p);
-        robot.dragMouse(x, y);
-    },
-    handleMouseDown: function(cmd) {
-        if(dc.isDebug && !dc.mouseDrag) {
-            return;
-        }
-        l('down', cmd);
-        clickPos = robot.getMousePos();
-        robot.mouseToggle("down");
-    },
-    handleMouseUp: function(cmd) {
-        if(dc.isDebug && !dc.mouseDrag) {
-            return;
-        }
-        l('up', cmd);
-        robot.mouseToggle("up");
-    },
-    handleCopy: function(cmd) {
-        if (dc.isDebug && !dc.copy) {
-            return;
-        }
-        l('copy', cmd);
-        ncp.copy(cmd.s);
-    },
-    handleEnter: function(cmd) {
-        if (dc.isDebug && !dc.mouseMove) {
-            return;
-        }
-        // l('enter', cmd);
-        let position = cmd.p;
-        let direction = cmd.d;
-        if (direction === eventHelper.ENTER_DIRECTION.LEFT) {
-            let x = screenWidth - enterOffset;
-            let y = screenHeight * position.yp;
-            robot.moveMouse(x, y);
-            serverClient.active();
-        }
-    },
-    handleRecieveIp: function(cmd) {
-        serverClient.addIp(cmd.addr);
-    }
-}
-
-
+// 接收器
 server.on('error', (err) => {
     l(`server error:\n${err.stack}`);
     server.close();
@@ -202,6 +89,9 @@ server.on('message', (msg, rinfo) => {
             case EVENT_TYPE.ENTER_SCREEN:
                 cmdHandler.handleEnter(cmd);
                 break;
+            case EVENT_TYPE.QUERY_ACTIVE:
+                cmdHandler.handlerQueryActive(cmd);
+                break;
             default:
                 l('未能识别的命令：', cmd);
         }
@@ -213,3 +103,140 @@ server.on('listening', () => {
 });
 
 server.bind(config.port);
+
+// 处理器
+const cmdHandler = {
+    handleMouseMove(cmd) {
+        if (dc.isDebug && !dc.mouseMove) {
+            return;
+        }
+        // l('move', cmd);
+        if (serverClient.isActive()) {
+            let { x, y } = getNextPos(cmd.p);
+            x = x > screenWidth ? screenWidth : x;
+            y = y > screenHeight ? screenHeight : y;
+            robot.moveMouse(x, y);
+            // 出界时，通知客户端
+            if (serverClient.isOutOfScreen(x, y)) {
+                serverClient.leave();   
+            }
+        }
+    },
+    handleKeyDown(cmd) {
+        if (dc.isDebug && !dc.keyDown) {
+            return;
+        }
+        l('keydown', cmd);
+        let keyMsg = cmd.k;
+        let isModify = eventHelper.isKeyModify(cmd.k);
+        if (!isModify) {
+            let refCode = keyMap[keyMsg];
+            if(refCode) {
+                let modify = eventHelper.getKeyModify(cmd.m);
+                if (modify) {
+                    
+                } else {
+                    robot.keyTap(refCode);
+                }
+            } else {
+                l('未支持键盘类型：', keyMsg);
+            }
+        }
+    },
+    handleMouseWheel(cmd) {
+        if (dc.isDebug && !dc.mouseWheel) {
+            return;
+        }
+        l('wheel', cmd);
+        let amount = cmd.a;
+        let rotation = cmd.r;
+        let wheelY = 0;
+        if(rotation === 1) {
+            wheelY = wheelY - amount * 10;
+        } else if (rotation === -1) {
+            wheelY = wheelY + amount * 10;
+        }
+        robot.scrollMouse(0, wheelY);
+    },
+    handleMouseClick(cmd) {
+        if(dc.isDebug && !dc.mouseClick) {
+            return;
+        }
+        l('click', cmd);
+        let button = eventHelper.getMouseClick(cmd.b);
+        robot.mouseClick(button);
+    },
+    handleMouseDrag(cmd) {
+        if(dc.isDebug && !dc.mouseDrag) {
+            return;
+        }
+        l('drag', cmd);
+        let { x, y } = getDragPos(cmd.p);
+        robot.dragMouse(x, y);
+    },
+    handleMouseDown(cmd) {
+        if(dc.isDebug && !dc.mouseDrag) {
+            return;
+        }
+        l('down', cmd);
+        clickPos = robot.getMousePos();
+        robot.mouseToggle("down");
+    },
+    handleMouseUp(cmd) {
+        if(dc.isDebug && !dc.mouseDrag) {
+            return;
+        }
+        l('up', cmd);
+        robot.mouseToggle("up");
+    },
+    handleCopy(cmd) {
+        if (dc.isDebug && !dc.copy) {
+            return;
+        }
+        l('copy', cmd);
+        ncp.copy(cmd.s);
+    },
+    handleEnter(cmd) {
+        if (dc.isDebug && !dc.mouseMove) {
+            return;
+        }
+        l('enter', cmd);
+        let position = cmd.p;
+        let direction = cmd.d;
+        let x, y;
+        switch (direction) {
+            case eventHelper.ENTER_DIRECTION.TOP: {
+                // 上边界，即从下部进入
+                x = screenWidth * position.xp;
+                y = screenHeight - OFFSET.ENTER;
+                break;
+            }
+            case eventHelper.ENTER_DIRECTION.RIGHT: {
+                // 右边界，即从左侧进入
+                x = OFFSET.ENTER;
+                y = screenHeight * position.yp;
+                break;
+            }
+            case eventHelper.ENTER_DIRECTION.BOTTOM: {
+                // 下边界，即从上部进入
+                x = screenWidth * position.xp;
+                y = OFFSET.ENTER;
+                break;
+            }
+            case eventHelper.ENTER_DIRECTION.LEFT: {
+                // 左边界，即从右侧进入
+                x = screenWidth - OFFSET.ENTER;
+                y = screenHeight * position.yp;
+                break;
+            }
+        }
+        robot.moveMouse(x, y);
+        serverClient.active(direction);
+    },
+    handleRecieveIp(cmd) {
+        serverClient.addIp(cmd.addr);
+    },
+    handlerQueryActive(cmd) {
+        serverClient.sendActive();
+    }
+}

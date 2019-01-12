@@ -4,12 +4,14 @@ const ncp = require('copy-paste');
 
 const EVENT_TYPE = require('../config/eventType');
 const config = require('../config/config');
+const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
 
+const OFFSET = eventHelper.OFFSET;
+const LEAVE_DIRECTION = eventHelper.LEAVE_DIRECTION;
 const send = connectHelper.send;
 const ips = new Set();
 const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
-const enterOffset = 50;
 const serverPort = config.report ? config.port : config.report;
 
 function l() {
@@ -21,46 +23,72 @@ function serverSend() {
 }
 
 const serverClient = {
-    init: function() {
-        ioHook.on("keydown", event => {
-            let keycode = event.keycode;
-            // 复制
-            l(keycode);
-            if ((event.ctrlKey || event.metaKey) && keycode === 46) {
-                ncp.paste(function(nothing, copyText) {
-                    send({
-                        c: EVENT_TYPE.COPY,
-                        s: copyText
-                    });
-                })
-            } 
-        });
-        ioHook.start();
+    init() {
+        // 屏蔽：目前ihook有BUG，在mac下无法监听
+        // ioHook.on("keydown", event => {
+        //     let keycode = event.keycode;
+        //     // 复制
+        //     l(keycode);
+        //     if ((event.ctrlKey || event.metaKey) && keycode === 46) {
+        //         ncp.paste(function(nothing, copyText) {
+        //             send({
+        //                 c: EVENT_TYPE.COPY,
+        //                 s: copyText
+        //             });
+        //         })
+        //     } 
+        // });
+        // ioHook.start();
     },
     _ips: new Set(),
-    addIp: function(ip) {
+    _enterDirection: null, // 客户端鼠标计入方向
+    _isActive: false, // 服务端是否被控制中
+    addIp(ip) {
         ips.add(ip);
         send({
             c: EVENT_TYPE.RECIEVE_IP,
         }, ip);
     },
-    _isActive: false,
-    active: function() {
+    active(direction) {
+        serverClient._enterDirection = direction;
         serverClient._isActive = true;
         serverSend({
             c: EVENT_TYPE.AFTER_ENTER
         });
     },
-    isActive: function() {
+    sendActive() {
+        serverSend({
+            c: EVENT_TYPE.RECIEVE_ACTIVE,
+        })
+    },
+    isActive() {
         return serverClient._isActive;
     },
-    leave: function() {
+    isOutOfScreen(x, y) {
+        switch (serverClient._enterDirection) {
+            case LEAVE_DIRECTION.TOP: {
+                return y < OFFSET.LEAVE;
+            }
+            case LEAVE_DIRECTION.RIGHT: {
+                return x > screenWidth - OFFSET.LEAVE;
+            }
+            case LEAVE_DIRECTION.BOTTOM: {
+                return y > screenHeight - OFFSET.LEAVE;
+            }
+            case LEAVE_DIRECTION.LEFT: {
+                return x < OFFSET.LEAVE;
+            }
+        }
+        return false;
+    },
+    leave() {
         serverClient._isActive = false;
         let pos = robot.getMousePos();
         serverSend({
             c: EVENT_TYPE.LEAVE_SCREEN,
+            d: serverClient._enterDirection,
             p: {
-                x: enterOffset,
+                xp: pos.x / screenWidth,
                 yp: pos.y / screenHeight
             }
         });
