@@ -19,6 +19,7 @@ const EVENT_TYPE =  {
     AFTER_LEAVE: 14,
     QUERY_ACTIVE: 15,
     RECIEVE_ACTIVE: 16,
+    BROADCAST_IP: 17,
 }
 
 exports = module.exports = EVENT_TYPE;

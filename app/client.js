@@ -4,27 +4,25 @@ const robot = require('robotjs');
 
 const EVENT_TYPE = require('../config/eventType');
 const config = require('../config/config');
-const clientServer = require('./clientServer');
+const clientServer = require('./clientConnector');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
+const debugHelper = require('../helper/debugHelper');
 
 const send = connectHelper.send;
 const ENTER_DIRECTION = eventHelper.ENTER_DIRECTION;
 const OFFSET = eventHelper.OFFSET;
 const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
+const { l, lw, le } = debugHelper;
 
 const dc = {
     isDebug: 1,
-    mouseMove: 1,
+    mouseMove: 0,
     mouseClick: 0,
     mouseWheel: 0,
     mouseDrag: 0,
     keydown: 0,
     copy: 0,
-}
-
-function l() {
-    console.log(...arguments);
 }
 
 let prePos = null;
@@ -117,7 +115,7 @@ const clientHandler = {
         isLock = true;
         isLockAvailable = true;
         prePos = robot.getMousePos();
-        l('force enter lock');
+        l('进入锁定模式');
     },
     // 强制退出连接服务器状态
     forceLeave() {
@@ -126,8 +124,10 @@ const clientHandler = {
             isLock = false;
             isLockAvailable = true;
         }, config.timeout);
-        robot.moveMouse(screenWidth / 2, screenHeight / 2);
-        l('force exit lock');
+        if (isLock === true) {
+            robot.moveMouse(screenWidth / 2, screenHeight / 2);
+            l('退出锁定模式');
+        }
     }
 }
 
@@ -276,5 +276,5 @@ clientEventListener.init();
 clientServer.init();
 clientServer.disconnect(function() {
     clientHandler.forceLeave();
-    l('已和服务器失去连接');
+    lw('已和服务器失去连接');
 });

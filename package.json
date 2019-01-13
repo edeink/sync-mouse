@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "share mouse and keyboard, support mac、linux and windows",
   "scripts": {
-    "s": "node ./app/server.js",
+    "s": "node ./app/serverReciever.js",
     "c": "node ./app/client.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

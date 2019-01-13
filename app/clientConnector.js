@@ -10,17 +10,16 @@ const EVENT_TYPE = require('../config/eventType');
 
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
+const debugHelper = require('../helper/debugHelper');
 
 const server = dgram.createSocket('udp4');
 const ENTER_SCREEN = eventHelper.ENTER_DIRECTION;
 const OFFSET = eventHelper.OFFSET;
 const send = connectHelper.send;
+const broadcast = connectHelper.broadcast;
 const localAddress = connectHelper.getLocalAddress();
 const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
-
-function l() {
-    console.log(...arguments)
-}
+const { l, lw, le } = debugHelper;
 
 const dc = {
     isDebug : 1,
@@ -59,7 +58,7 @@ const clientServer = {
             }
         };
         server.on('error', (err) => {
-            l(`server error:\n${err.stack}`);
+            le(`server error:\n${err.stack}`);
             server.close();
         }); 
 
@@ -68,7 +67,7 @@ const clientServer = {
             if (cmd) {
                 switch(cmd.c) {
                     case EVENT_TYPE.RECIEVE_IP:
-                        clientServer.finishSendIp();
+                        clientServer.recieveServerIp(cmd);
                         break;
                     case EVENT_TYPE.COPY: 
                         cmdHandler.handleCopy(cmd);
@@ -82,14 +81,29 @@ const clientServer = {
                     case EVENT_TYPE.RECIEVE_ACTIVE:
                         clientServer.recieveServerActive();
                         break;
+                    case EVENT_TYPE.BROADCAST_IP:
+                        // 收到自身的广播，可忽略该命令
+                        l('收到广播', cmd);
+                        break;
                     default:
-                        l('未能识别的命令：', cmd);
+                        lw('未能识别的命令：', cmd);
                 }
             }
         });
 
-        server.bind(config.port);
-        clientServer.sendIp();
+        server.on('listening', () => {
+            const address = server.address();
+            l(`客户端启动完成，正在监听数据：${address.address}, 本地地址：${localAddress}:${address.port}`);
+            if (config.serverIp) {
+                clientServer.sendIp();
+            } else if (config.group) {
+                clientServer.broadcastIp();
+            } else {
+                le('参数错误，`config/config.js`必须设置服务器Ip(serverIp)，或所属群组(group)')
+            }
+        });
+
+        server.bind(config.report);
     },
     // 是否正在控制服务端
     isActive() {
@@ -111,14 +125,14 @@ const clientServer = {
         // 超过时间，代表服务端无反馈
         let timeoutKey = setTimeout(function() {
             clientServer._waitforEnter = false;
-            l('暂时无法连接服务器, 请稍后再试');
+            lw('暂时无法连接服务器, 请稍后再试');
         }, config.timeout);
         // 收到服务器允许进入后的回调事件
         clientServer._afterEnter = function() {
             clearTimeout(timeoutKey);
             clientServer._waitforEnter = false;
             clientServer._isActive = true;
-            l('after enter');
+            l('正在控制服务端');
             afterEnterCb && afterEnterCb();
         }
         let enterFunc = function() {
@@ -177,7 +191,7 @@ const clientServer = {
                 }
             }
             robot.moveMouse(x, y);
-            l('after leave');
+            l('退出控制服务端');
             callback && callback(cmd);
         }
     },
@@ -187,23 +201,50 @@ const clientServer = {
             c: EVENT_TYPE.SEND_IP,
             addr: localAddress,
         });
-        // 多次请求连接
-        clientServer._sendingIpIntervalKey = setInterval(function() {
-            if(clientServer._isFinishSend) {
-                clearInterval(clientServer._sendingIpIntervalKey);
-            } else {
-                send({
-                    c: EVENT_TYPE.SEND_IP,
-                    addr: localAddress,
-                })
-            }
-        }, config.timeout);
+        l('正在向服务端提交本机局域网地址（指定Ip）', localAddress);
+        clientServer._isNotConnectTime ++;
+        if (clientServer._isFinishSend) {
+            clearTimeout(clientServer._sendingIpIntervalKey);
+        } else if (clientServer._isNotConnectTime === 5) {
+            le('已累计5次无法连接服务器，请确保服务器正在运行，或已断开网络连接，稍后再试');
+        } else {
+            // 多次请求连接
+            clientServer._sendingIpIntervalKey = setTimeout(function() {
+                clientServer.sendIp();
+            }, config.timeout);
+        }
+    },
+    // 通过广播的方式发送Ip地址
+    broadcastIp() {
+        broadcast({
+            c: EVENT_TYPE.BROADCAST_IP,
+            group: config.broadcast,
+            addr: localAddress,
+        });
+        l('正在向服务端提交本机局域网地址（广播）', localAddress);
+        clientServer._isNotConnectTime ++;
+        if (clientServer._isFinishSend) {
+            clearTimeout(clientServer._sendingIpIntervalKey);
+        } else if (clientServer._isNotConnectTime === 5) {
+            le('已累计5次无法连接服务器，请稍后确保服务器正在运行，或已断开网络连接，稍后再试');
+        } else {
+            // 多次请求连接
+            clientServer._sendingIpIntervalKey = setTimeout(function() {
+                clientServer.broadcastIp();
+            }, config.timeout);
+        }
     },
     // 收到服务端接受反馈
-    finishSendIp() {
-        l('finish send ip');
+    recieveServerIp(cmd) {
         clientServer._isFinishSend = true;
         clearInterval(clientServer._sendingIpIntervalKey);
+        clientServer._isNotConnectTime = 0;
+        if (cmd.addr) {
+            connectHelper.setServerIp(cmd.addr);
+            l('收到服务端反馈', cmd.addr);
+        } else {
+            l('收到服务端反馈');
+        }
         clientServer._afterConnect && clientServer._afterConnect();
         clientServer.checkServerActive();
     },
@@ -215,16 +256,16 @@ const clientServer = {
         clientServer._checkActiveKey = setTimeout(function() {        
             // 和服务端失去连接时触发内容
             clientServer._isConnect = false;
+            clientServer._isNotConnectTime++;
             // 累计上次将导致无法连接
-            if(clientServer._isNotConnectTime === 2) {
-                l('无法连接服务器，将退出连接');
+            if(clientServer._isNotConnectTime === 3) {
+                lw('无法连接服务器，将退出连接');
                 clientServer._isNotConnectTime = 0;
                 clientServer._afterDisconnect && clientServer._afterDisconnect();
                 return false;
-            } else if(clientServer._isNotConnectTime === 1){
-                l('预警信息，目前网络拥堵，累计两次请求服务端无响应');
+            } else if(clientServer._isNotConnectTime === 2){
+                lw('预警信息，目前网络拥堵，累计两次请求服务端无响应');
             } 
-            clientServer._isNotConnectTime++;
             clientServer._checkActiveKey = setTimeout(function() {
                 clientServer.checkServerActive();
             }, config.timeout);

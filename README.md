@@ -6,8 +6,8 @@
 在不考虑linux的情况下，上面的安装可以化简为：
 
 - mac：安装Xcode
-- window：以`管理员`身份运行`powershell`
-  - ``npm install windows-build-tools`。[参考](https://www.npmjs.com/package/windows-build-tools)
+- window：以管理员身份运行`powershell`
+  - `npm install windows-build-tools`。[参考](https://www.npmjs.com/package/windows-build-tools)
   - `cd node_modules/robotjs`目录并执行`node-gyp rebuild`
 
 ## 使用方式
