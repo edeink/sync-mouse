@@ -12,14 +12,15 @@ const LEAVE_DIRECTION = eventHelper.LEAVE_DIRECTION;
 const send = connectHelper.send;
 const ips = new Set();
 const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
-const serverPort = config.report ? config.port : config.report;
+const clientPort = config.report ? config.report : config.port;
+const localAddress = connectHelper.getLocalAddress();
 
 function l() {
     console.log(...arguments);
 }
 
 function serverSend() {
-    send(...arguments, ips, serverPort);
+    send(...arguments, ips, clientPort);
 }
 
 const serverClient = {
@@ -47,7 +48,7 @@ const serverClient = {
         ips.add(ip);
         send({
             c: EVENT_TYPE.RECIEVE_IP,
-        }, ip);
+        }, ip, clientPort);
     },
     active(direction) {
         serverClient._enterDirection = direction;
@@ -59,7 +60,8 @@ const serverClient = {
     sendActive() {
         serverSend({
             c: EVENT_TYPE.RECIEVE_ACTIVE,
-        })
+            addr: localAddress,
+        });
     },
     isActive() {
         return serverClient._isActive;

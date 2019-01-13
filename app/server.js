@@ -4,7 +4,7 @@ const ncp = require('copy-paste');
 
 const config = require('../config/config');
 const EVENT_TYPE = require('../config/eventType');
-const serverClient = require('./serverClient');
+const serverClient = require('./serverSender');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
 
@@ -13,6 +13,7 @@ const server = dgram.createSocket('udp4');
 const keyMap = eventHelper.KEY_MAP;
 const OFFSET = eventHelper.OFFSET;
 const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
+const localAddress = connectHelper.getLocalAddress();
 
 let clickPos = robot.getMousePos();
 
@@ -57,6 +58,7 @@ server.on('error', (err) => {
 
 server.on('message', (msg, rinfo) => {
     let cmd = JSON.parse(msg.toString());
+    l(cmd);
     if (cmd) {
         switch(cmd.c) {
             case EVENT_TYPE.SEND_IP:
@@ -92,6 +94,10 @@ server.on('message', (msg, rinfo) => {
             case EVENT_TYPE.QUERY_ACTIVE:
                 cmdHandler.handlerQueryActive(cmd);
                 break;
+            case EVENT_TYPE.BROADCAST_IP:
+                l('接受到广播信息', cmd);
+                cmdHandler.handleBroadcastIp(cmd);
+                // break;
             default:
                 l('未能识别的命令：', cmd);
         }
@@ -99,7 +105,8 @@ server.on('message', (msg, rinfo) => {
 });
 
 server.on('listening', () => {
-   
+    const address = server.address();
+    l(`服务端启动完成，正在监听数据：${address.address}, 本地地址：${localAddress}:${address.port}`);
 });
 
 server.bind(config.port);
@@ -238,5 +245,10 @@ const cmdHandler = {
     },
     handlerQueryActive(cmd) {
         serverClient.sendActive();
+    },
+    handleBroadcastIp(cmd) {
+        if (cmd.group === config.group) {
+            serverClient.sendActive();
+        }
     }
 }
