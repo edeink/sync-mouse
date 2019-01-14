@@ -4,7 +4,7 @@ const ncp = require('copy-paste');
 
 const config = require('../config/config');
 const EVENT_TYPE = require('../config/eventType');
-const serverClient = require('./serverSender');
+const serverClient = require('./serverConnector');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
 

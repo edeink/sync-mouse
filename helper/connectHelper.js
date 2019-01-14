@@ -42,17 +42,19 @@ function _send(obj, ip, port) {
 // 广播
 function broadcast(obj, port) {
     var socket = dgram.createSocket("udp4");
-    socket.bind(function () {
+    socket.bind(port, ip, function () {
         socket.setBroadcast(true);
         const message = Buffer.from(JSON.stringify(obj));
         const realPort = port ? port : config.port;
-        const broadcastIp = _getBroadcastAddress(ip, netmask);
+        // const broadcastIp = _getBroadcastAddress(ip, netmask);
+        _getBroadcastAddress
+        const broadcastIp = _getBroadcastAddress(ip, '255.255.254.0');
+        console.log('广播消息', obj, realPort, broadcastIp);
         socket.send(message, 0, message.length, realPort, broadcastIp, function(err, bytes) {
             socket.close();
         });
     });
 }
-
 
 // 发送udp报文
 function send(obj, ips, port) {
@@ -67,29 +69,20 @@ function send(obj, ips, port) {
     }
 }
 
-// let a = _getBroadcastAddress('197.8.43.211', '255.255.255.240');
-// let b = _getBroadcastAddress('192.168.0.1', '255.255.0.0');
-// let c = _getBroadcastAddress('10.123.6.11', '255.255.252.0');
-// console.log(a, b, c);
-
 function _getBroadcastAddress(ip, netmask) {
-    if(broadcastIp) {
-        return broadcastIp;
-    } else {
-        initNetworkMsg();
-        let ipArray = ip.split('.');
-        let netMaskArray = netmask.split('.');
-        let broadcastArray = [];
-        for (let i=0; i<4; i++) {
-            let ipInt10 = parseInt(ipArray[i], 10);
-            let maskInt10 = parseInt(netMaskArray[i], 10);
-            let and = ipInt10&maskInt10;
-            let non = 255^maskInt10;
-            let or = and|non;
-            broadcastArray.push(or);
-        }
-        return broadcastArray.join('.');
+    initNetworkMsg();
+    let ipArray = ip.split('.');
+    let netMaskArray = netmask.split('.');
+    let broadcastArray = [];
+    for (let i=0; i<4; i++) {
+        let ipInt10 = parseInt(ipArray[i], 10);
+        let maskInt10 = parseInt(netMaskArray[i], 10);
+        let and = ipInt10&maskInt10;
+        let non = 255^maskInt10;
+        let or = and|non;
+        broadcastArray.push(or);
     }
+    return broadcastArray.join('.');
 }
 
 function getLocalAddress() {

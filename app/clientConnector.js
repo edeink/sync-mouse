@@ -103,7 +103,7 @@ const clientServer = {
             }
         });
 
-        server.bind(config.report);
+        server.bind(config.report, localAddress);
     },
     // 是否正在控制服务端
     isActive() {
@@ -202,15 +202,19 @@ const clientServer = {
             addr: localAddress,
         });
         l('正在向服务端提交本机局域网地址（指定Ip）', localAddress);
-        clientServer._isNotConnectTime ++;
         if (clientServer._isFinishSend) {
             clearTimeout(clientServer._sendingIpIntervalKey);
-        } else if (clientServer._isNotConnectTime === 5) {
-            le('已累计5次无法连接服务器，请确保服务器正在运行，或已断开网络连接，稍后再试');
         } else {
             // 多次请求连接
-            clientServer._sendingIpIntervalKey = setTimeout(function() {
-                clientServer.sendIp();
+            clientServer._sendingIpIntervalKey = setTimeout(function() {        
+                clientServer._isNotConnectTime ++;
+                if (clientServer._isNotConnectTime === 5) {
+                    clientServer._isNotConnectTime = 0;
+                    clearTimeout(clientServer._sendingIpIntervalKey);
+                    le('已累计5次无法连接服务器，请确保服务器正在运行，或已断开网络连接，稍后再试');
+                }  else {
+                    clientServer.sendIp();
+                }
             }, config.timeout);
         }
     },
@@ -218,19 +222,23 @@ const clientServer = {
     broadcastIp() {
         broadcast({
             c: EVENT_TYPE.BROADCAST_IP,
-            group: config.broadcast,
+            group: config.group,
             addr: localAddress,
         });
         l('正在向服务端提交本机局域网地址（广播）', localAddress);
-        clientServer._isNotConnectTime ++;
         if (clientServer._isFinishSend) {
             clearTimeout(clientServer._sendingIpIntervalKey);
-        } else if (clientServer._isNotConnectTime === 5) {
-            le('已累计5次无法连接服务器，请稍后确保服务器正在运行，或已断开网络连接，稍后再试');
         } else {
             // 多次请求连接
-            clientServer._sendingIpIntervalKey = setTimeout(function() {
-                clientServer.broadcastIp();
+            clientServer._sendingIpIntervalKey = setTimeout(function() {        
+                clientServer._isNotConnectTime ++;
+                if (clientServer._isNotConnectTime === 5) {
+                    clientServer._isNotConnectTime = 0;
+                    clearTimeout(clientServer._sendingIpIntervalKey);
+                    le('已累计5次无法连接服务器，请稍后确保服务器正在运行，或是否属于同一网段（UDP可接受不代表同属同一网段），稍后再试');
+                } else {
+                    clientServer.broadcastIp();
+                }
             }, config.timeout);
         }
     },
