@@ -1,7 +1,14 @@
+const process = require('process');
+const SYSTEM_TYPE = {
+    MAC: 0,
+    WIN: 1,
+    LINUS: 2,
+}
+
 const KEY_MAP = {
     1: 'esc', 2: '1', 3: '2', 4: '3', 5: '4', 6: '5', 7: '6', 8: '7', 9: '8', 10: '9', 11: '0', 12: '-', 13: '=', 14: 'backspace',
     15: 'tab', 16: 'q', 17: 'w', 18: 'e', 19: 'r', 20: 't', 21: 'y', 22: 'u', 23: 'i', 24: 'o', 25: 'p', 26: '[', 27: ']', 28: 'enter',
-    29: 'control', 30: 'a', 31: 's', 32: 'd', 33: 'f', 34: 'g', 35: 'h', 36: 'i', 37: 'j', 38: 'k', 39: 'l', 40: ';', 41: '\'',  42: 'shift', 43: '\\',
+    29: 'control', 30: 'a', 31: 's', 32: 'd', 33: 'f', 34: 'g', 35: 'h', 36: 'j', 37: 'k', 38: 'l', 39: ';', 40: '\'', 41: 'enter',  42: 'shift', 43: '\\',
     44: 'z', 45: 'x', 46: 'c', 47: 'v', 48: 'b', 49: 'n', 50: 'm', 51: ',', 52: '.', 53: '/', 54: 'right_shift', 
     55: '', 56: 'alt', 57: 'space', 58: '', 
     59: 'f1', 60: 'f2', 61: 'f3', 62: 'f4', 63: 'f5', 64: 'f6', 65: 'f7', 66: 'f8', 67: 'f9', 68: 'f10', 69: 'f11', 70: 'f12',
@@ -43,7 +50,7 @@ const OFFSET = {
     ENTER: 50, // 进入时即偏移的距离
 }
 
-function getKeyModify(modify) {
+function getKeyModify(modify, system) {
     if(modify.a) {
         return 'alt'
     } else if(modify.s) {
@@ -71,6 +78,22 @@ function isCtrlGlobalKey(key) {
     return [26, 27].indexOf(key) !== -1;
 }
 
+function getSystem() {
+    if (system) {
+        return system;
+    } else {
+        let platform = process.platform;
+        if (platform === 'drawin') {
+            return SYSTEM_TYPE.MAC;
+        } else if (platform=== 'win32' || platform === 'win64') {
+            return SYSTEM_TYPE.WIN;
+        } else {
+            // 未确定
+            return SYSTEM_TYPE.LINUS;
+        }
+    }
+}
+
 exports = module.exports = {
     KEY_MAP,
     MOUSE_MAP,
@@ -78,9 +101,11 @@ exports = module.exports = {
     ENTER_DIRECTION,
     LEAVE_DIRECTION,
     OFFSET,
+    SYSTEM_TYPE,
     isKeyModify,
     getMouseClick,
     getKeyModify,
     getMouseClick,
     isCtrlGlobalKey,
+    getSystem,
 }

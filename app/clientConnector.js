@@ -142,7 +142,12 @@ const clientServer = {
                 p: {
                     xp: pos.x / screenWidth,
                     yp: pos.y / screenHeight,
-                }
+                },
+                s: {
+                    sw: screenWidth,
+                    sh: screenHeight,
+                },
+                env: eventHelper.getSystem()
             });
         }
         // 申请进入服务器
@@ -201,7 +206,7 @@ const clientServer = {
             c: EVENT_TYPE.SEND_IP,
             addr: localAddress,
         });
-        l('正在向服务端提交本机局域网地址（指定Ip）', localAddress);
+        l('正在向服务端提交本机局域网地址（指定Ip）', config.serverIp);
         if (clientServer._isFinishSend) {
             clearTimeout(clientServer._sendingIpIntervalKey);
         } else {

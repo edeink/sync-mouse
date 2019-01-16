@@ -16,6 +16,7 @@ const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
 const localAddress = connectHelper.getLocalAddress();
 
 let clickPos = robot.getMousePos();
+let screenRatio = 1; // 屏幕比率（用来计算鼠标灵敏度）
 
 serverClient.init();
 
@@ -36,8 +37,8 @@ function l() {
 function getNextPos(offsetPos) {
     let currPos = robot.getMousePos();
     return {
-        x: currPos.x + offsetPos.x,
-        y: currPos.y + offsetPos.y
+        x: currPos.x + offsetPos.x / screenRatio,
+        y: currPos.y + offsetPos.y / screenRatio
     }
 }
 
@@ -58,7 +59,6 @@ server.on('error', (err) => {
 
 server.on('message', (msg, rinfo) => {
     let cmd = JSON.parse(msg.toString());
-    l(cmd);
     if (cmd) {
         switch(cmd.c) {
             case EVENT_TYPE.SEND_IP:
@@ -209,6 +209,9 @@ const cmdHandler = {
         }
         l('enter', cmd);
         let position = cmd.p;
+        let screenSize = cmd.s;
+        screenRatio = (screenSize.sw / screenWidth).toFixed(2);
+        l(screenRatio)
         let direction = cmd.d;
         let x, y;
         switch (direction) {
