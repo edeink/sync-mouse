@@ -10,6 +10,7 @@ const config = {
     report: 41233,
     timeout: 1000,
     direction: ENTER_DIRECTION.LEFT,
+    accerelate: 2,
 }
 
 exports = module.exports = config;

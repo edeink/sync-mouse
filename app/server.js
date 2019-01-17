@@ -17,10 +17,11 @@ const localAddress = connectHelper.getLocalAddress();
 
 let clickPos = robot.getMousePos();
 let screenRatio = 1; // 屏幕比率（用来计算鼠标灵敏度）
+let remoteSystem = null;
 
 serverClient.init();
 
-const dc = {
+const func = {
     isDebug: 1,
     mouseMove: 1,
     mouseClick: 1,
@@ -28,6 +29,15 @@ const dc = {
     mouseDrag: 1,
     keyDown: 1,
     copy: 1,
+}
+
+const log = {
+    mouseMove: 0,
+    mouseClick: 0,
+    mouseWheel: 0,
+    mouseDrag: 0,
+    keyDown: 0,
+    copy: 0,
 }
 
 function l() {
@@ -97,7 +107,7 @@ server.on('message', (msg, rinfo) => {
             case EVENT_TYPE.BROADCAST_IP:
                 l('接受到广播信息', cmd);
                 cmdHandler.handleBroadcastIp(cmd);
-                // break;
+                break;
             default:
                 l('未能识别的命令：', cmd);
         }
@@ -114,10 +124,12 @@ server.bind(config.port);
 // 处理器
 const cmdHandler = {
     handleMouseMove(cmd) {
-        if (dc.isDebug && !dc.mouseMove) {
+        if (func.isDebug && !func.mouseMove) {
             return;
         }
-        // l('move', cmd);
+        if (log.mouseMove) {
+            l('move', cmd);
+        }
         if (serverClient.isActive()) {
             let { x, y } = getNextPos(cmd.p);
             x = x > screenWidth ? screenWidth : x;
@@ -130,18 +142,24 @@ const cmdHandler = {
         }
     },
     handleKeyDown(cmd) {
-        if (dc.isDebug && !dc.keyDown) {
+        if (func.isDebug && !func.keyDown) {
             return;
         }
-        l('keydown', cmd);
+        if (log.keyDown) {
+            l('keydown', cmd);
+        }
         let keyMsg = cmd.k;
         let isModify = eventHelper.isKeyModify(cmd.k);
         if (!isModify) {
             let refCode = keyMap[keyMsg];
             if(refCode) {
-                let modify = eventHelper.getKeyModify(cmd.m);
+                let modify = eventHelper.getKeyModify(cmd.m, remoteSystem);
                 if (modify) {
-                    
+                    robot.keyTap(refCode, modify);
+                    robot.keyToggle(modify, 'up');
+                    if (eventHelper.isCopy(refCode, modify)) {
+                        serverClient.sendCopyText();
+                    }
                 } else {
                     robot.keyTap(refCode);
                 }
@@ -151,10 +169,12 @@ const cmdHandler = {
         }
     },
     handleMouseWheel(cmd) {
-        if (dc.isDebug && !dc.mouseWheel) {
+        if (func.isDebug && !func.mouseWheel) {
             return;
         }
-        l('wheel', cmd);
+        if (log.mouseWheel) {
+            l('wheel', cmd);
+        }
         let amount = cmd.a;
         let rotation = cmd.r;
         let wheelY = 0;
@@ -166,54 +186,66 @@ const cmdHandler = {
         robot.scrollMouse(0, wheelY);
     },
     handleMouseClick(cmd) {
-        if(dc.isDebug && !dc.mouseClick) {
+        if (func.isDebug && !func.mouseClick) {
             return;
         }
-        l('click', cmd);
+        if (log.mouseClick) {
+            l('click', cmd);
+        }
         let button = eventHelper.getMouseClick(cmd.b);
         robot.mouseClick(button);
     },
     handleMouseDrag(cmd) {
-        if(dc.isDebug && !dc.mouseDrag) {
+        if (func.isDebug && !func.mouseDrag) {
             return;
         }
-        l('drag', cmd);
+        if (log.mouseDrag) {
+            l('drag', cmd);
+        }
         let { x, y } = getDragPos(cmd.p);
         robot.dragMouse(x, y);
     },
     handleMouseDown(cmd) {
-        if(dc.isDebug && !dc.mouseDrag) {
+        if(func.isDebug && !func.mouseDrag) {
             return;
         }
-        l('down', cmd);
+        if (log.mouseDrag) {
+            l('down', cmd);
+        }
         clickPos = robot.getMousePos();
         robot.mouseToggle("down");
     },
     handleMouseUp(cmd) {
-        if(dc.isDebug && !dc.mouseDrag) {
+        if(func.isDebug && !func.mouseDrag) {
             return;
         }
-        l('up', cmd);
+        if (log.mouseDrag) {
+            l('up', cmd);
+        }
         robot.mouseToggle("up");
     },
     handleCopy(cmd) {
-        if (dc.isDebug && !dc.copy) {
+        if (func.isDebug && !func.copy) {
             return;
         }
-        l('copy', cmd);
+        if (log.copy) {
+            l('copy', cmd);
+        }
         ncp.copy(cmd.s);
     },
     handleEnter(cmd) {
-        if (dc.isDebug && !dc.mouseMove) {
+        if (func.isDebug && !func.mouseMove) {
             return;
         }
-        l('enter', cmd);
+        if (log.mouseMove) {
+            l('enter', cmd);
+        }
         let position = cmd.p;
         let screenSize = cmd.s;
-        screenRatio = (screenSize.sw / screenWidth).toFixed(2);
-        l(screenRatio)
+        screenRatio = (screenSize.sw / screenWidth).toFixed(2) / config.accerelate;
         let direction = cmd.d;
         let x, y;
+        remoteSystem = cmd.env
         switch (direction) {
             case eventHelper.ENTER_DIRECTION.TOP: {
                 // 上边界，即从下部进入
@@ -253,5 +285,5 @@ const cmdHandler = {
         if (cmd.group === config.group) {
             serverClient.sendActive();
         }
-    }
+    },
 }

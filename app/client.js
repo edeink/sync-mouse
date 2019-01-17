@@ -178,7 +178,9 @@ const clientEventListener = {
                 // 仅右键才发送, 左键将被up & down 取代
                 if (event.button === eventHelper.MOUSE_MAP.RIGHT) {
                     isFixRightClick = true;
-                    robot.mouseClick();
+                    if (event.button === eventHelper.MOUSE_MAP.RIGHT) {
+                        robot.mouseClick();
+                    }
                     send({
                         c: EVENT_TYPE.MOUSE_CLICK,
                         b: event.button,
@@ -222,13 +224,15 @@ const clientEventListener = {
             }
         })
         
+        // 鼠标输入事件
         ioHook.on("keydown", event => {
             if(dc.isDebug && dc.keydown) {    
                 l('keydown', JSON.stringify(event));
             }
             let keycode = event.keycode;
             // 复制
-            if (event.ctrlKey && keycode === 46) {
+            if (!isLock && event.ctrlKey && keycode === 46) {
+                // 仅在非控制状态下，才传输控制粘贴板文本
                 ncp.paste(function(nothing, copyText) {
                     send({
                         c: EVENT_TYPE.COPY,
@@ -238,21 +242,12 @@ const clientEventListener = {
             } else if (event.ctrlKey && event.altKey && eventHelper.isCtrlGlobalKey(keycode)) {    
                 // 自定义热键
                 switch(keycode) {
-                    case 26: {
-                        clientHandler.forceEnter();
-                        break;
-                    }
-                    case 27: {
-                        clientHandler.forceLeave();
-                        break;
-                    }
-        
+                    case 26: { clientHandler.forceEnter(); break; }
+                    case 27: { clientHandler.forceLeave(); break; }
                 }
             } else {
                 // 普通键盘
-                if (!isLock) {
-                    return;
-                }
+                if (!isLock) { return; }
                 let msg = {
                     c: EVENT_TYPE.KEY_DOWN,
                     k: event.keycode,

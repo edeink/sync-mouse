@@ -47,7 +47,6 @@ const clientServer = {
                 if (dc.isDebug && !dc.copy) {
                     return;
                 }
-                l(cmd);
                 ncp.copy(cmd.s);
             },
             handleEnter() {

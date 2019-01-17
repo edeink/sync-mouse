@@ -25,21 +25,6 @@ function serverSend() {
 
 const serverClient = {
     init() {
-        // 屏蔽：目前ihook有BUG，在mac下无法监听
-        // ioHook.on("keydown", event => {
-        //     let keycode = event.keycode;
-        //     // 复制
-        //     l(keycode);
-        //     if ((event.ctrlKey || event.metaKey) && keycode === 46) {
-        //         ncp.paste(function(nothing, copyText) {
-        //             send({
-        //                 c: EVENT_TYPE.COPY,
-        //                 s: copyText
-        //             });
-        //         })
-        //     } 
-        // });
-        // ioHook.start();
     },
     _ips: new Set(),
     _enterDirection: null, // 客户端鼠标计入方向
@@ -94,6 +79,14 @@ const serverClient = {
                 yp: pos.y / screenHeight
             }
         });
+    },
+    sendCopyText() {
+        ncp.paste(function(nothing, copyText) {
+            serverSend({
+                c: EVENT_TYPE.COPY,
+                s: copyText,
+            });
+        })
     }
 }
 

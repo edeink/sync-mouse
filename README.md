@@ -10,6 +10,10 @@
   - `npm install windows-build-tools`。[参考](https://www.npmjs.com/package/windows-build-tools)
   - `cd node_modules/robotjs`目录并执行`node-gyp rebuild`
 
+## 目前版本
+
+因为某些已知的BUG，目前不推荐MAC作为`Client`，而Window不存在限制。
+
 ## 使用方式
 
 1. 检查网络，保证局域网内，两台电脑可以互ping
@@ -33,14 +37,14 @@
 ### 功能
 
 - [x] 双向复制
-- [ ] 复制文件
 - [x] 无法连接服务器等提示 & 机制
 - [x] 设置两个屏幕的位置
-- [ ] 局域网基于Key的自发现机制（无需明确IP）
-- [ ] 更适应屏幕的活动规则
+- [x] 局域网基于Key的自发现机制（无需明确IP）
+- [x] 更适应屏幕的活动规则
+- [x] 快捷键输入
+- [ ] 复制文件
 - [ ] 根据性质分别采用TCP & UDP
 - [ ] 阻止键盘和鼠标事件
-- [ ] 快捷键输入
 
 ### 未来功能
 
@@ -51,6 +55,6 @@
 
 ### BUG
 
-- [ ] 无法双击
 - [ ] 鼠标进入和退出时不够流畅
 - [ ] Mac Hook无法监听多个键盘事件
+- [ ] VSCODE双击时无法通过模拟获取

@@ -4,6 +4,7 @@ const SYSTEM_TYPE = {
     WIN: 1,
     LINUS: 2,
 }
+let system;
 
 const KEY_MAP = {
     1: 'esc', 2: '1', 3: '2', 4: '3', 5: '4', 6: '5', 7: '6', 8: '7', 9: '8', 10: '9', 11: '0', 12: '-', 13: '=', 14: 'backspace',
@@ -22,6 +23,13 @@ const MOUSE_MAP = {
     LEFT: 1,
     RIGHT: 2,
     MIDDLE: 3,
+}
+
+const MODIFY_KEY = {
+    CONTRROL: 'control',
+    COMMAND: 'command',
+    ALT: 'alt',
+    SHIFT: 'shift'
 }
 
 const MOUSE_KEY_NAME = {
@@ -50,17 +58,31 @@ const OFFSET = {
     ENTER: 50, // 进入时即偏移的距离
 }
 
-function getKeyModify(modify, system) {
+function getKeyModify(modify, remoteSystem) {
+    let system = getSystem();
+    let isDiffAndIncludMac = remoteSystem !== system && remoteSystem === SYSTEM_TYPE.MAC || system === SYSTEM_TYPE.MAC;
     if(modify.a) {
-        return 'alt'
+        return MODIFY_KEY.ALT
     } else if(modify.s) {
-        return 'shift'
+        return MODIFY_KEY.SHIFT
     } else if(modify.c) {
-        return 'ctrl'
+        return isDiffAndIncludMac ? MODIFY_KEY.COMMAND : MODIFY_KEY.CONTRROL;
     } else if(modify.m) {
-        return 'meta'
+        return isDiffAndIncludMac ? MODIFY_KEY.CONTRROL : MODIFY_KEY.COMMAND;
     } else {
         return undefined;
+    }
+}
+
+function isCopy(code, modify) {
+    if (code === 'c') {
+        if (system === SYSTEM_TYPE.MAC) {
+            return modify === 'command';
+        } else {
+            return modify === 'control'
+        }
+    } else {
+        return false;
     }
 }
 
@@ -83,14 +105,15 @@ function getSystem() {
         return system;
     } else {
         let platform = process.platform;
-        if (platform === 'drawin') {
-            return SYSTEM_TYPE.MAC;
+        if (platform === 'darwin') {
+            system = SYSTEM_TYPE.MAC;
         } else if (platform=== 'win32' || platform === 'win64') {
-            return SYSTEM_TYPE.WIN;
+            system = SYSTEM_TYPE.WIN;
         } else {
             // 未确定
-            return SYSTEM_TYPE.LINUS;
+            system = SYSTEM_TYPE.LINUS;
         }
+        return system;
     }
 }
 
@@ -108,4 +131,5 @@ exports = module.exports = {
     getMouseClick,
     isCtrlGlobalKey,
     getSystem,
+    isCopy,
 }
