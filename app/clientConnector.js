@@ -18,7 +18,7 @@ const OFFSET = eventHelper.OFFSET;
 const send = connectHelper.send;
 const broadcast = connectHelper.broadcast;
 const localAddress = connectHelper.getLocalAddress();
-const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
+const { screenWidth, screenHeight } = eventHelper.getLocalScreenSize();
 const { l, lw, le } = debugHelper;
 
 const dc = {
@@ -34,6 +34,7 @@ const clientServer = {
     _afterLeave: null, // 离开服务器
     _afterDisconnect: null, // 和服务器端口连接
     _waitforEnter: false,
+    _delayToEnter: false, // 防止多次尝试连接服务器
     _isActive: false, // 检测是否控制服务器
     _isConnect: false, // 检测是否仍和服务器保持链接
     _isNotConnectTime: 0, // 和服务器断开连接次数
@@ -116,8 +117,11 @@ const clientServer = {
      * 请求进入服务端
      * @param {number} enterDirection 触发进入服务端的方向
      */
-    enter(enterDirection, afterEnterCb) {
-        let direction = enterDirection;
+    enter(cmd, afterEnterCb) {
+        let { x, y, direction } = cmd;
+        if(clientServer._delayToEnter === true) {
+            return;
+        }
         let pos = robot.getMousePos();
         clientServer._waitforEnter = true;
         clientServer._afterLeave = null;
@@ -126,11 +130,17 @@ const clientServer = {
             clientServer._waitforEnter = false;
             lw('暂时无法连接服务器, 请稍后再试');
         }, config.timeout);
+        robot.moveMouse(x, y);
+        robot.mouseClick('left');
         // 收到服务器允许进入后的回调事件
         clientServer._afterEnter = function() {
             clearTimeout(timeoutKey);
             clientServer._waitforEnter = false;
             clientServer._isActive = true;
+            clientServer._delayToEnter = true;
+            setTimeout(function() {
+                clientServer._delayToEnter = false;
+            }, config.timeout);
             l('正在控制服务端');
             afterEnterCb && afterEnterCb();
         }
@@ -165,36 +175,36 @@ const clientServer = {
         clientServer._afterLeave = function(cmd) {
             clientServer._afterEnter = null;
             clientServer._isActive = false;
-            let xPercent = cmd.p.xp;
-            let yPercent = cmd.p.yp;
-            let x, y;
-            switch (cmd.d) {
-                case ENTER_SCREEN.TOP: {
-                    // 从上部返回
-                    x = screenWidth * xPercent;
-                    y = OFFSET.ENTER;
-                    break;
-                }
-                case ENTER_SCREEN.RIGHT: {
-                    // 从右侧返回
-                    x = screenWidth - OFFSET.ENTER;
-                    y = screenHeight * yPercent;
-                    break;
-                }
-                case ENTER_SCREEN.BOTTOM: {
-                    // 从下部返回
-                    x = screenWidth * xPercent;
-                    y = screenHeight - OFFSET.ENTER;
-                    break;
-                }
-                case ENTER_SCREEN.LEFT: {
-                    // 从左侧返回
-                    x = OFFSET.ENTER;
-                    y = screenHeight * yPercent;
-                    break;
-                }
-            }
-            robot.moveMouse(x, y);
+            // let xPercent = cmd.p.xp;
+            // let yPercent = cmd.p.yp;
+            // let x, y;
+            // switch (cmd.d) {
+            //     case ENTER_SCREEN.TOP: {
+            //         // 从上部返回
+            //         x = screenWidth * xPercent;
+            //         y = OFFSET.ENTER;
+            //         break;
+            //     }
+            //     case ENTER_SCREEN.RIGHT: {
+            //         // 从右侧返回
+            //         x = screenWidth - OFFSET.ENTER;
+            //         y = screenHeight * yPercent;
+            //         break;
+            //     }
+            //     case ENTER_SCREEN.BOTTOM: {
+            //         // 从下部返回
+            //         x = screenWidth * xPercent;
+            //         y = screenHeight - OFFSET.ENTER;
+            //         break;
+            //     }
+            //     case ENTER_SCREEN.LEFT: {
+            //         // 从左侧返回
+            //         x = OFFSET.ENTER;
+            //         y = screenHeight * yPercent;
+            //         break;
+            //     }
+            // }
+            // robot.moveMouse(x, y);
             l('退出控制服务端');
             callback && callback(cmd);
         }

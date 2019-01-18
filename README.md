@@ -55,6 +55,10 @@
 
 ### BUG
 
-- [ ] 鼠标进入和退出时不够流畅
-- [ ] Mac Hook无法监听多个键盘事件
+- [x] 鼠标进入和退出时不够流畅（因为mousemove触发过多，应该throttle）
+
+- [x] 比较难唤起Mac的程序坞（接近Mac程序坞时，mousemove应该平滑移动）
+
+- [ ] Mac Hook无法监听多个键盘事件（iohook的BUG，[Link](https://github.com/wilix-team/iohook/issues/124)）
 - [ ] VSCODE双击时无法通过模拟获取
+- [ ] 单个修饰键无法使用

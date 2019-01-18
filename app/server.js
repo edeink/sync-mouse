@@ -12,7 +12,7 @@ const server = dgram.createSocket('udp4');
 
 const keyMap = eventHelper.KEY_MAP;
 const OFFSET = eventHelper.OFFSET;
-const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
+const { screenWidth, screenHeight } = eventHelper.getLocalScreenSize();
 const localAddress = connectHelper.getLocalAddress();
 
 let clickPos = robot.getMousePos();
@@ -134,7 +134,11 @@ const cmdHandler = {
             let { x, y } = getNextPos(cmd.p);
             x = x > screenWidth ? screenWidth : x;
             y = y > screenHeight ? screenHeight : y;
-            robot.moveMouse(x, y);
+            if (eventHelper.isReadyToGoOut(x, y)) {
+                robot.moveMouseSmooth(x, y);
+            } else {
+                robot.moveMouse(x, y);
+            }
             // 出界时，通知客户端
             if (serverClient.isOutOfScreen(x, y)) {
                 serverClient.leave();   
@@ -178,10 +182,11 @@ const cmdHandler = {
         let amount = cmd.a;
         let rotation = cmd.r;
         let wheelY = 0;
+        let offset = amount * 10 * config.accerelate;
         if(rotation === 1) {
-            wheelY = wheelY - amount * 10;
+            wheelY = wheelY - offset;
         } else if (rotation === -1) {
-            wheelY = wheelY + amount * 10;
+            wheelY = wheelY + offset;
         }
         robot.scrollMouse(0, wheelY);
     },

@@ -8,12 +8,14 @@ const clientServer = require('./clientConnector');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
 const debugHelper = require('../helper/debugHelper');
+const utils = require('../helper/util');
 
 const send = connectHelper.send;
 const ENTER_DIRECTION = eventHelper.ENTER_DIRECTION;
 const OFFSET = eventHelper.OFFSET;
-const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
+const { screenWidth, screenHeight } = eventHelper.getLocalScreenSize();
 const { l, lw, le } = debugHelper;
+const { throttle } = utils;
 
 const dc = {
     isDebug: 1,
@@ -55,6 +57,29 @@ const clientHandler = {
             }
         });
     },
+    handleWheel: function(event) {
+        let msg = {
+            c: EVENT_TYPE.MOUSE_WHEEL,
+            a: event.amount,
+            r: event.rotation
+        }
+        send(msg);
+    },
+    handleDrag: function() {
+        if (!isFixDrag) {
+            isFixDrag = true;
+        }
+        let { x, y } = getOffsetPos();
+        if(x === 0 && y === 0) { return; }
+        robot.moveMouse(prePos.x, prePos.y);
+        send({
+            c: EVENT_TYPE.MOSUE_DRAG,
+            p: {
+                x: x,
+                y: y
+            }
+        })
+    },
     handleEnter: function(x, y) {
         let isEnter = false;
         let direction = null;
@@ -66,13 +91,13 @@ const clientHandler = {
                     direction = ENTER_DIRECTION.LEFT;
                     isEnter = x < OFFSET.LEAVE;
                     lockX = OFFSET.LEAVE;
-                    lockY = currPos.y;
+                    lockY = screenHeight / 2; // currPos.y;
                     break;
                 }
                 case ENTER_DIRECTION.TOP: {
                     direction = ENTER_DIRECTION.TOP;
                     isEnter = y < OFFSET.LEAVE;
-                    lockX = currPos.x;
+                    lockX = screenWidth / 2; // currPos.x;
                     lockY = OFFSET.LEAVE;
                     break;
                 }
@@ -80,23 +105,22 @@ const clientHandler = {
                     direction = ENTER_DIRECTION.RIGHT;
                     isEnter = x > screenWidth - OFFSET.LEAVE;
                     lockX = screenWidth - OFFSET.LEAVE;
-                    lockY = currPos.y;
+                    lockY = lockY = screenHeight / 2;
                     break;
                 }
                 case ENTER_DIRECTION.BOTTOM: {
                     direction = ENTER_DIRECTION.BOTTOM;
                     ENTER_DIRECTION.BOTTOM;
                     isEnter = y > screenHeight - OFFSET.LEAVE;
-                    lockX = currPos.x;
+                    lockX = screenWidth / 2;
                     lockY = screenHeight - OFFSET.LEAVE;
                     break;
                 }
             }
         }
         if (isEnter) {
-            clientServer.enter(direction, function() {
+            clientServer.enter({direction, x: lockX, y: lockY}, function() {
                 // 激活服务端的举动
-                robot.moveMouse(lockX, lockY);
                 prePos = { x: lockX, y: lockY};
                 isLock = true;
             })
@@ -134,10 +158,15 @@ const clientHandler = {
 // 客户端事件监听
 const clientEventListener = {
     init() {
+
+        let throttleMove = throttle(clientHandler.handleMove, 20);
+        let throttleWheel = throttle(clientHandler.handleWheel, 20);
+        let throttleDrag = throttle(clientHandler.handleDrag, 20);
+
         ioHook.on("mousemove", event => {
             if (isLockAvailable && isLock) {
                 let { x, y } = getOffsetPos();
-                clientHandler.handleMove(x, y);
+                throttleMove(x, y);
             } else {
                 let {x, y} = event;
                 clientHandler.handleEnter(x, y);
@@ -194,19 +223,7 @@ const clientEventListener = {
                 if (dc.isDebug && dc.mouseDrag) {
                     l('drag', JSON.stringify(event));
                 }
-                if (!isFixDrag) {
-                    isFixDrag = true;
-                }
-                let { x, y } = getOffsetPos();
-                if(x === 0 && y === 0) { return; }
-                robot.moveMouse(prePos.x, prePos.y);
-                send({
-                    c: EVENT_TYPE.MOSUE_DRAG,
-                    p: {
-                        x: x,
-                        y: y
-                    }
-                })
+                throttleDrag();
             }
         })
         
@@ -215,12 +232,7 @@ const clientEventListener = {
                 if (dc.isDebug && dc.mouseWheel) {    
                     l('wheel', JSON.stringify(event));
                 }
-                let msg = {
-                    c: EVENT_TYPE.MOUSE_WHEEL,
-                    a: event.amount,
-                    r: event.rotation
-                }
-                send(msg);
+                throttleWheel(event);
             }
         })
         

@@ -1,14 +1,16 @@
 const dgram = require('dgram');
-const robot = require('robotjs');
 const interfaces = require('os').networkInterfaces();
 
 const config = require('../config/config');
+const debugHelper = require('../helper/debugHelper');
+const client = dgram.createSocket('udp4');
 
 let ip = null;
 let netmask = null;
-let screenSize = null;
 let serverIp = config.serverIp;
 let broadcastIp = null; // '10.13.159.255'
+
+const {l, lw, le} = debugHelper;
 
 // 获取本机局域网Ip
 function initNetworkMsg() {
@@ -16,7 +18,7 @@ function initNetworkMsg() {
     networkKeys.some(function(eachKey) {
         let iface = interfaces[eachKey];
         return iface.some(function(eachNetworkMsg) {
-            if(eachNetworkMsg.family === 'IPv4' && eachNetworkMsg.address !== '127.0.0.1' && !eachNetworkMsg.internal){  
+            if (eachNetworkMsg.family === 'IPv4' && eachNetworkMsg.address !== '127.0.0.1' && !eachNetworkMsg.internal){  
                 ip = eachNetworkMsg.address;  
                 netmask = eachNetworkMsg.netmask;
                 return true;
@@ -32,10 +34,16 @@ function setServerIp(serverIp) {
 }
 
 function _send(obj, ip, port) {
-    const message = Buffer.from(JSON.stringify(obj));   
-    const client = dgram.createSocket('udp4');
+    const message = Buffer.from(JSON.stringify(obj));
+    if (message > 1480) {
+        lw('报文大于1480，将进行分包，请留意传输质量');
+    }
     client.send(message, port, ip, (err) => {
-        client.close();
+        if (err) {
+            lw('udp报文发送出错：', err);
+            client.close();        
+            client = dgram.createSocket('udp4');
+        }
     });
 }
 
@@ -49,7 +57,7 @@ function broadcast(obj, port) {
         // const broadcastIp = _getBroadcastAddress(ip, netmask);
         _getBroadcastAddress
         const broadcastIp = _getBroadcastAddress(ip, '255.255.254.0');
-        console.log('广播消息', obj, realPort, broadcastIp);
+        l('广播消息', obj, realPort, broadcastIp);
         socket.send(message, 0, message.length, realPort, broadcastIp, function(err, bytes) {
             socket.close();
         });
@@ -59,7 +67,7 @@ function broadcast(obj, port) {
 // 发送udp报文
 function send(obj, ips, port) {
     let realPort = port ? port : config.port;
-    if(ips && ips.forEach) {
+    if (ips && ips.forEach) {
         ips.forEach(function(eachIp) {
             _send(obj, eachIp, realPort);
         })
@@ -89,21 +97,8 @@ function getLocalAddress() {
     return ip ? ip : initNetworkMsg();
 }
 
-function getLocalScreenSize() {
-    if (screenSize) {
-        return screenSize;
-    } else {
-        let screenSize = robot.getScreenSize();
-        return {
-            screenWidth: screenSize.width,
-            screenHeight: screenSize.height,
-        }
-    }
-}
-
 exports = module.exports = {
     getLocalAddress,
-    getLocalScreenSize,
     send,
     broadcast,
     setServerIp,

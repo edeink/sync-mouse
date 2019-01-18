@@ -1,3 +1,4 @@
+const robot = require('robotjs');
 const process = require('process');
 const SYSTEM_TYPE = {
     MAC: 0,
@@ -5,6 +6,7 @@ const SYSTEM_TYPE = {
     LINUS: 2,
 }
 let system;
+let screenSize;
 
 const KEY_MAP = {
     1: 'esc', 2: '1', 3: '2', 4: '3', 5: '4', 6: '5', 7: '6', 8: '7', 9: '8', 10: '9', 11: '0', 12: '-', 13: '=', 14: 'backspace',
@@ -55,7 +57,8 @@ const LEAVE_DIRECTION = {
 
 const OFFSET = {
     LEAVE: 10, // 监听离开的距离
-    ENTER: 50, // 进入时即偏移的距离
+    SERVER_LEAVE: 0, // 服务端离开的距离
+    ENTER: 30, // 进入时即偏移的距离
 }
 
 function getKeyModify(modify, remoteSystem) {
@@ -100,6 +103,12 @@ function isCtrlGlobalKey(key) {
     return [26, 27].indexOf(key) !== -1;
 }
 
+function isReadyToGoOut(x, y) {
+    let enterOffset = OFFSET.ENTER;
+    let { screenWidth, screenHeight } = getLocalScreenSize();
+    return x < enterOffset || x > screenWidth - enterOffset || y < enterOffset || y > screenHeight - enterOffset;
+}
+
 function getSystem() {
     if (system) {
         return system;
@@ -114,6 +123,18 @@ function getSystem() {
             system = SYSTEM_TYPE.LINUS;
         }
         return system;
+    }
+}
+
+function getLocalScreenSize() {
+    if (screenSize) {
+        return screenSize;
+    } else {
+        let screenSize = robot.getScreenSize();
+        return {
+            screenWidth: screenSize.width,
+            screenHeight: screenSize.height,
+        }
     }
 }
 
@@ -132,4 +153,6 @@ exports = module.exports = {
     isCtrlGlobalKey,
     getSystem,
     isCopy,
+    isReadyToGoOut,
+    getLocalScreenSize,
 }

@@ -11,7 +11,7 @@ const OFFSET = eventHelper.OFFSET;
 const LEAVE_DIRECTION = eventHelper.LEAVE_DIRECTION;
 const send = connectHelper.send;
 const ips = new Set();
-const { screenWidth, screenHeight } = connectHelper.getLocalScreenSize();
+const { screenWidth, screenHeight } = eventHelper.getLocalScreenSize();
 const clientPort = config.report ? config.report : config.port;
 const localAddress = connectHelper.getLocalAddress();
 
@@ -52,18 +52,19 @@ const serverClient = {
         return serverClient._isActive;
     },
     isOutOfScreen(x, y) {
+        let leaveOffset = OFFSET.SERVER_LEAVE;
         switch (serverClient._enterDirection) {
             case LEAVE_DIRECTION.TOP: {
-                return y < OFFSET.LEAVE;
+                return y <= leaveOffset;
             }
             case LEAVE_DIRECTION.RIGHT: {
-                return x > screenWidth - OFFSET.LEAVE;
+                return x >= screenWidth - leaveOffset;
             }
             case LEAVE_DIRECTION.BOTTOM: {
-                return y > screenHeight - OFFSET.LEAVE;
+                return y >= screenHeight - leaveOffset;
             }
             case LEAVE_DIRECTION.LEFT: {
-                return x < OFFSET.LEAVE;
+                return x <= leaveOffset;
             }
         }
         return false;
