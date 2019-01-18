@@ -80,6 +80,38 @@ const clientHandler = {
             }
         })
     },
+    handKeyDown: function(event) {
+        let keycode = event.keycode;
+        // 复制
+        if (!isLock && event.ctrlKey && keycode === 46) {
+            // 仅在非控制状态下，才传输控制粘贴板文本
+            ncp.paste(function(nothing, copyText) {
+                send({
+                    c: EVENT_TYPE.COPY,
+                    s: copyText
+                });
+            })
+        } else if (event.ctrlKey && event.altKey && eventHelper.isCtrlGlobalKey(keycode)) {    
+            // 自定义热键
+            switch(keycode) {
+                case 26: { clientHandler.forceEnter(); break; }
+                case 27: { clientHandler.forceLeave(); break; }
+            }
+        } else {
+            // 普通键盘
+            if (!isLock) { return; }
+            let msg = {
+                c: EVENT_TYPE.KEY_DOWN,
+                k: event.keycode,
+                m: {},
+            };
+            if (event.altKey) msg.m.a = 1;
+            if (event.shiftKey) msg.m.s = 1;
+            if (event.ctrlKey) msg.m.c = 1;
+            if (event.metaKey) msg.m.m = 1;
+            send(msg);
+        }
+    },
     handleEnter: function(x, y) {
         let isEnter = false;
         let direction = null;
@@ -91,13 +123,13 @@ const clientHandler = {
                     direction = ENTER_DIRECTION.LEFT;
                     isEnter = x < OFFSET.LEAVE;
                     lockX = OFFSET.LEAVE;
-                    lockY = screenHeight / 2; // currPos.y;
+                    lockY = currPos.y;
                     break;
                 }
                 case ENTER_DIRECTION.TOP: {
                     direction = ENTER_DIRECTION.TOP;
                     isEnter = y < OFFSET.LEAVE;
-                    lockX = screenWidth / 2; // currPos.x;
+                    lockX = currPos.x;
                     lockY = OFFSET.LEAVE;
                     break;
                 }
@@ -105,14 +137,14 @@ const clientHandler = {
                     direction = ENTER_DIRECTION.RIGHT;
                     isEnter = x > screenWidth - OFFSET.LEAVE;
                     lockX = screenWidth - OFFSET.LEAVE;
-                    lockY = lockY = screenHeight / 2;
+                    lockY = currPos.y;
                     break;
                 }
                 case ENTER_DIRECTION.BOTTOM: {
                     direction = ENTER_DIRECTION.BOTTOM;
                     ENTER_DIRECTION.BOTTOM;
                     isEnter = y > screenHeight - OFFSET.LEAVE;
-                    lockX = screenWidth / 2;
+                    lockX = currPos.x;
                     lockY = screenHeight - OFFSET.LEAVE;
                     break;
                 }
@@ -162,6 +194,7 @@ const clientEventListener = {
         let throttleMove = throttle(clientHandler.handleMove, 20);
         let throttleWheel = throttle(clientHandler.handleWheel, 20);
         let throttleDrag = throttle(clientHandler.handleDrag, 20);
+        let throttleKeyDown = throttle(clientHandler.handKeyDown, 20);
 
         ioHook.on("mousemove", event => {
             if (isLockAvailable && isLock) {
@@ -241,34 +274,18 @@ const clientEventListener = {
             if(dc.isDebug && dc.keydown) {    
                 l('keydown', JSON.stringify(event));
             }
-            let keycode = event.keycode;
-            // 复制
-            if (!isLock && event.ctrlKey && keycode === 46) {
-                // 仅在非控制状态下，才传输控制粘贴板文本
-                ncp.paste(function(nothing, copyText) {
-                    send({
-                        c: EVENT_TYPE.COPY,
-                        s: copyText
-                    });
-                })
-            } else if (event.ctrlKey && event.altKey && eventHelper.isCtrlGlobalKey(keycode)) {    
-                // 自定义热键
-                switch(keycode) {
-                    case 26: { clientHandler.forceEnter(); break; }
-                    case 27: { clientHandler.forceLeave(); break; }
-                }
-            } else {
-                // 普通键盘
-                if (!isLock) { return; }
+            throttleKeyDown(event);
+        })
+
+        ioHook.on('keyup', event => {
+            if(dc.isDebug && dc.keydown) {    
+                l('keyup', JSON.stringify(event));
+            }
+            if (isLock) {
                 let msg = {
-                    c: EVENT_TYPE.KEY_DOWN,
+                    c: EVENT_TYPE.KEY_UP,
                     k: event.keycode,
-                    m: {},
-                };
-                if (event.altKey) msg.m.a = 1;
-                if (event.shiftKey) msg.m.s = 1;
-                if (event.ctrlKey) msg.m.c = 1;
-                if (event.metaKey) msg.m.m = 1;
+                }
                 send(msg);
             }
         })

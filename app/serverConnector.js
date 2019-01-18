@@ -1,4 +1,3 @@
-const ioHook = require('iohook');
 const robot = require('robotjs');
 const ncp = require('copy-paste');
 
@@ -12,7 +11,7 @@ const LEAVE_DIRECTION = eventHelper.LEAVE_DIRECTION;
 const send = connectHelper.send;
 const ips = new Set();
 const { screenWidth, screenHeight } = eventHelper.getLocalScreenSize();
-const clientPort = config.report ? config.report : config.port;
+const clientPort = config.port;
 const localAddress = connectHelper.getLocalAddress();
 
 function l() {

@@ -103,7 +103,7 @@ const clientServer = {
             }
         });
 
-        server.bind(config.report, localAddress);
+        server.bind(config.port, localAddress);
     },
     // 是否正在控制服务端
     isActive() {
@@ -141,7 +141,7 @@ const clientServer = {
             setTimeout(function() {
                 clientServer._delayToEnter = false;
             }, config.timeout);
-            l('正在控制服务端');
+            // l('正在控制服务端');
             afterEnterCb && afterEnterCb();
         }
         let enterFunc = function() {
@@ -205,7 +205,7 @@ const clientServer = {
             //     }
             // }
             // robot.moveMouse(x, y);
-            l('退出控制服务端');
+            // l('退出控制服务端');
             callback && callback(cmd);
         }
     },
@@ -215,7 +215,7 @@ const clientServer = {
             c: EVENT_TYPE.SEND_IP,
             addr: localAddress,
         });
-        l('正在向服务端提交本机局域网地址（指定Ip）', config.serverIp);
+        l('连接服务端：（指定Ip）', config.serverIp);
         if (clientServer._isFinishSend) {
             clearTimeout(clientServer._sendingIpIntervalKey);
         } else {
@@ -239,7 +239,7 @@ const clientServer = {
             group: config.group,
             addr: localAddress,
         });
-        l('正在向服务端提交本机局域网地址（广播）', localAddress);
+        l('连接服务端：局域网广播', localAddress);
         if (clientServer._isFinishSend) {
             clearTimeout(clientServer._sendingIpIntervalKey);
         } else {
@@ -263,9 +263,9 @@ const clientServer = {
         clientServer._isNotConnectTime = 0;
         if (cmd.addr) {
             connectHelper.setServerIp(cmd.addr);
-            l('收到服务端反馈', cmd.addr);
+            l('连接成功', cmd.addr);
         } else {
-            l('收到服务端反馈');
+            l('连接成功');
         }
         clientServer._afterConnect && clientServer._afterConnect();
         clientServer.checkServerActive();
@@ -280,13 +280,13 @@ const clientServer = {
             clientServer._isConnect = false;
             clientServer._isNotConnectTime++;
             // 累计上次将导致无法连接
-            if(clientServer._isNotConnectTime === 3) {
+            if(clientServer._isNotConnectTime === 2) {
                 lw('无法连接服务器，将退出连接');
                 clientServer._isNotConnectTime = 0;
                 clientServer._afterDisconnect && clientServer._afterDisconnect();
                 return false;
-            } else if(clientServer._isNotConnectTime === 2){
-                lw('预警信息，目前网络拥堵，累计两次请求服务端无响应');
+            } else if(clientServer._isNotConnectTime === 1){
+                lw('网络拥堵，请求服务端无响应');
             } 
             clientServer._checkActiveKey = setTimeout(function() {
                 clientServer.checkServerActive();

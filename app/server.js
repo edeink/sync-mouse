@@ -18,6 +18,9 @@ const localAddress = connectHelper.getLocalAddress();
 let clickPos = robot.getMousePos();
 let screenRatio = 1; // 屏幕比率（用来计算鼠标灵敏度）
 let remoteSystem = null;
+let preDownTime = new Date().getTime();
+let preModify = null;
+let isCapsLock = false;
 
 serverClient.init();
 
@@ -108,6 +111,9 @@ server.on('message', (msg, rinfo) => {
                 l('接受到广播信息', cmd);
                 cmdHandler.handleBroadcastIp(cmd);
                 break;
+            case EVENT_TYPE.KEY_UP:
+                cmdHandler.handleKeyUp(cmd);
+                break;
             default:
                 l('未能识别的命令：', cmd);
         }
@@ -135,6 +141,8 @@ const cmdHandler = {
             x = x > screenWidth ? screenWidth : x;
             y = y > screenHeight ? screenHeight : y;
             if (eventHelper.isReadyToGoOut(x, y)) {
+                if (x < 0) {x = 0;}
+                if (y < 0) {y = 0;}
                 robot.moveMouseSmooth(x, y);
             } else {
                 robot.moveMouse(x, y);
@@ -152,12 +160,12 @@ const cmdHandler = {
         if (log.keyDown) {
             l('keydown', cmd);
         }
-        let keyMsg = cmd.k;
+        let keyCode = cmd.k;
         let isModify = eventHelper.isKeyModify(cmd.k);
         if (!isModify) {
-            let refCode = keyMap[keyMsg];
+            let refCode =  eventHelper.getKeyValue(keyCode);
+            let modify = eventHelper.getKeyModify(cmd.m, remoteSystem);
             if(refCode) {
-                let modify = eventHelper.getKeyModify(cmd.m, remoteSystem);
                 if (modify) {
                     robot.keyTap(refCode, modify);
                     robot.keyToggle(modify, 'up');
@@ -165,11 +173,40 @@ const cmdHandler = {
                         serverClient.sendCopyText();
                     }
                 } else {
-                    robot.keyTap(refCode);
+                    if (isCapsLock === true && eventHelper.isWord(keyCode)) {
+                        // 大写输入
+                        robot.keyTap(refCode, 'shift')
+                    } else {
+                        robot.keyTap(refCode);
+                    }
+                   
                 }
             } else {
-                l('未支持键盘类型：', keyMsg);
+                if(keyCode === eventHelper.CAPS_LOCK) {
+                    isCapsLock = !isCapsLock;
+                } else {
+                    l('未支持键盘类型：', keyCode); // 比如 capLocks
+                }
             }
+        } else {
+            let modify = eventHelper.getKeyModify(cmd.k, remoteSystem);
+            // 处理Control & Command修饰键盘
+            if (preModify !== modify) {
+                robot.keyTap(modify, modify);
+                preModify = modify;
+            }
+        }
+    },
+    handleKeyUp(cmd) {
+        if (log.keyDown) {
+            l('keyup', cmd);
+        }
+        // 处理修饰键
+        let isModify = eventHelper.isKeyModify(cmd.k);
+        let modify = eventHelper.getKeyModify(cmd.k, remoteSystem);
+        if (isModify) {
+            robot.keyToggle(modify, 'up');
+            preModify = null;
         }
     },
     handleMouseWheel(cmd) {
@@ -227,7 +264,18 @@ const cmdHandler = {
         if (log.mouseDrag) {
             l('up', cmd);
         }
-        robot.mouseToggle("up");
+        let currTime = new Date().getTime();
+        if (currTime - preDownTime < config.doubleclick) {
+            robot.mouseToggle("up");
+             // fix: 部分编辑器(down & up) * 2 !== doubleclick
+             setTimeout(function() {
+                robot.mouseClick('left', true);
+             })
+        } else {
+            robot.mouseToggle("up");
+            preDownTime = new Date().getTime();
+        }
+        
     },
     handleCopy(cmd) {
         if (func.isDebug && !func.copy) {
@@ -283,7 +331,7 @@ const cmdHandler = {
     handleRecieveIp(cmd) {
         serverClient.addIp(cmd.addr);
     },
-    handlerQueryActive(cmd) {
+    handlerQueryActive() {
         serverClient.sendActive();
     },
     handleBroadcastIp(cmd) {

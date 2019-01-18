@@ -21,6 +21,18 @@ const KEY_MAP = {
     61000: 'up', 61003: 'left', 61005: 'right', 61008: 'down', 
 }
 
+// const VALUE_WORD = {
+//     A: 30, B: 48, C: 46, D: 32, E: 18, F: 33, G: 34, H: 35, I: 23, J: 36, K: 37, L: 38, M: 50, N: 49,
+//     O: 24, P: 25, Q: 16, R: 19, S: 31, T: 20, U: 22, V: 47, W: 17, X: 45, Y: 21, Z:44,
+// }
+
+const CAPS_LOCK = 58;
+
+const KEY_WORD = {
+    30: 'A', 48: 'B', 46: 'C', 32: 'D', 18: 'E', 33: 'F', 34: 'G', 35: 'H', 23: 'I', 36: 'J', 37: 'K', 38: 'L', 50: 'M', 49: 'N',
+    24: 'O', 25: 'P', 16: 'Q', 19: 'R', 31: 'S', 20: 'T', 22: 'U', 47: 'V', 17: 'W', 45: 'X', 21: 'Y', 44: 'Z',
+}
+
 const MOUSE_MAP = {
     LEFT: 1,
     RIGHT: 2,
@@ -61,16 +73,24 @@ const OFFSET = {
     ENTER: 30, // 进入时即偏移的距离
 }
 
+function getKeyValue(keyCode) {
+    return KEY_MAP[keyCode];
+}
+
+function isWord(keyCode) {
+    return typeof KEY_WORD[keyCode] !== 'undefined';
+}
+
 function getKeyModify(modify, remoteSystem) {
     let system = getSystem();
     let isDiffAndIncludMac = remoteSystem !== system && remoteSystem === SYSTEM_TYPE.MAC || system === SYSTEM_TYPE.MAC;
-    if(modify.a) {
+    if(modify === 56 || modify.a) {
         return MODIFY_KEY.ALT
-    } else if(modify.s) {
+    } else if(modify === 42 || modify.s) {
         return MODIFY_KEY.SHIFT
-    } else if(modify.c) {
+    } else if(modify === 29 || modify.c) {
         return isDiffAndIncludMac ? MODIFY_KEY.COMMAND : MODIFY_KEY.CONTRROL;
-    } else if(modify.m) {
+    } else if(modify === 3675 || modify.m) {
         return isDiffAndIncludMac ? MODIFY_KEY.CONTRROL : MODIFY_KEY.COMMAND;
     } else {
         return undefined;
@@ -146,9 +166,12 @@ exports = module.exports = {
     LEAVE_DIRECTION,
     OFFSET,
     SYSTEM_TYPE,
+    CAPS_LOCK,
     isKeyModify,
     getMouseClick,
     getKeyModify,
+    getKeyValue,
+    isWord,
     getMouseClick,
     isCtrlGlobalKey,
     getSystem,

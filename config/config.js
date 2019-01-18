@@ -7,10 +7,11 @@ const config = {
     serverIp: '10.13.242.44', // mac ip
     // serverIp:  '10.13.145.52', // pc ip
     port: 41234,
-    report: 41233,
-    timeout: 1000,
-    direction: ENTER_DIRECTION.LEFT,
-    accerelate: 2,
+    timeout: 1000, // 网络连接默认的超时时间
+    direction: ENTER_DIRECTION.LEFT, // 被控制电脑在主电脑的何处
+    // 以下为适配不同电脑，允许进行的操作调整
+    accerelate: 2, // 鼠标灵敏度
+    doubleclick: 300, // x毫秒内的两次点击会被认为是双击
 }
 
 exports = module.exports = config;

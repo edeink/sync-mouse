@@ -3,7 +3,7 @@ const interfaces = require('os').networkInterfaces();
 
 const config = require('../config/config');
 const debugHelper = require('../helper/debugHelper');
-const client = dgram.createSocket('udp4');
+let client = dgram.createSocket('udp4');
 
 let ip = null;
 let netmask = null;
