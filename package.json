@@ -1,22 +1,29 @@
 {
-  "name": "share-mouse-and-keyboard",
+  "name": "sharemk",
   "version": "0.0.1",
   "description": "share mouse and keyboard, support mac、linux and windows",
   "scripts": {
-    "s": "node ./src/app/server.js",
-    "c": "node ./src/app/client.js",
+    "s": "./bin/sharemk.js -s",
+    "c": "./bin/sharemk.js -c",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edeity/syncMouse"
+  },
+  "keywords": [
+    "Shared mouse keyboard"
+  ],
   "author": "edeity",
   "license": "MIT",
   "dependencies": {
-    "clipboard-file": "0.0.1",
+    "clipboard-file": "^0.0.3",
     "commander": "^2.19.0",
     "copy-paste": "^1.3.0",
     "iohook": "^0.3.1",
     "robotjs": "^0.5.1"
   },
   "bin": {
-    "sharemk": "./bin/sharemk.js"
+    "sharemk": "bin/sharemk.js"
   }
 }

@@ -14,8 +14,8 @@
 ## 安装使用
 
 - `npm i sharemk -g`
-- Win：`sharemk s`
-- Mac：`sharemk c`
+- Win：`sharemk -s`
+- Mac：`sharemk -c`
 
 ## 目前支持功能
 

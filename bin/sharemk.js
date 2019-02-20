@@ -13,9 +13,8 @@ sharemk: share your mouse & keyboard between different system
 `    
 )
 .option('-s, --server', 'for server (warning: only windows current)')
-.option('-c, --client', 'for client (warning: only macos current)')
+.option('-c, --client', 'for client (warning: only macos current)');
 
-// program.command('sharemk').alias('g');
 program.parse(process.argv);
 
 if (program.server) {
