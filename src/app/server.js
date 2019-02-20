@@ -2,13 +2,16 @@ const dgram = require('dgram');
 const robot = require('robotjs');
 const ncp = require('copy-paste');
 
-const config = require('../config/config');
-const EVENT_TYPE = require('../config/eventType');
+const config = require('../../config/config');
+const EVENT_TYPE = require('../helper/eventType');
 const serverClient = require('./serverConnector');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
+const debugHelper = require('../helper/debugHelper');
 
-const server = dgram.createSocket('udp4');
+const { l, lw, le } = debugHelper;
+
+const serverSocket = dgram.createSocket('udp4');
 
 const keyMap = eventHelper.KEY_MAP;
 const OFFSET = eventHelper.OFFSET;
@@ -21,8 +24,6 @@ let remoteSystem = null;
 let preDownTime = new Date().getTime();
 let preModify = null;
 let isCapsLock = false;
-
-serverClient.init();
 
 const func = {
     isDebug: 1,
@@ -43,10 +44,6 @@ const log = {
     copy: 0,
 }
 
-function l() {
-    console.log(...arguments)
-}
-
 function getNextPos(offsetPos) {
     let currPos = robot.getMousePos();
     return {
@@ -64,68 +61,73 @@ function getDragPos(offsetPos) {
     }
 }
 
-// 接收器
-server.on('error', (err) => {
-    l(`server error:\n${err.stack}`);
-    server.close();
-}); 
+const server = {
+    init() {
+        serverClient.init();
+        // 接收器
+        serverSocket.on('error', (err) => {
+            l(`server error:\n${err.stack}`);
+            serverSocket.close();
+        }); 
 
-server.on('message', (msg, rinfo) => {
-    let cmd = JSON.parse(msg.toString());
-    if (cmd) {
-        switch(cmd.c) {
-            case EVENT_TYPE.SEND_IP:
-                cmdHandler.handleRecieveIp(cmd);
-                break;
-            case EVENT_TYPE.MOUSE_MOVE:
-                cmdHandler.handleMouseMove(cmd);
-                break;
-            case EVENT_TYPE.MOUSE_CLICK:
-                cmdHandler.handleMouseClick(cmd);
-                break;
-            case EVENT_TYPE.MOUSE_WHEEL:
-                cmdHandler.handleMouseWheel(cmd);
-                break;
-            case EVENT_TYPE.MOSUE_DRAG:
-                cmdHandler.handleMouseDrag(cmd);
-                break;
-            case EVENT_TYPE.MOUSE_DOWN: 
-                cmdHandler.handleMouseDown(cmd);
-                break;
-            case EVENT_TYPE.MOUSE_UP:
-                cmdHandler.handleMouseUp(cmd);
-                break;
-            case EVENT_TYPE.KEY_DOWN:
-                cmdHandler.handleKeyDown(cmd);
-                break;
-            case EVENT_TYPE.COPY: 
-                cmdHandler.handleCopy(cmd);
-                break;
-            case EVENT_TYPE.ENTER_SCREEN:
-                cmdHandler.handleEnter(cmd);
-                break;
-            case EVENT_TYPE.QUERY_ACTIVE:
-                cmdHandler.handlerQueryActive(cmd);
-                break;
-            case EVENT_TYPE.BROADCAST_IP:
-                l('接受到广播信息', cmd);
-                cmdHandler.handleBroadcastIp(cmd);
-                break;
-            case EVENT_TYPE.KEY_UP:
-                cmdHandler.handleKeyUp(cmd);
-                break;
-            default:
-                l('未能识别的命令：', cmd);
-        }
+        serverSocket.on('message', (msg, rinfo) => {
+            let cmd = JSON.parse(msg.toString());
+            if (cmd) {
+                switch(cmd.c) {
+                    case EVENT_TYPE.SEND_IP:
+                        cmdHandler.handleRecieveIp(cmd);
+                        break;
+                    case EVENT_TYPE.MOUSE_MOVE:
+                        cmdHandler.handleMouseMove(cmd);
+                        break;
+                    case EVENT_TYPE.MOUSE_CLICK:
+                        cmdHandler.handleMouseClick(cmd);
+                        break;
+                    case EVENT_TYPE.MOUSE_WHEEL:
+                        cmdHandler.handleMouseWheel(cmd);
+                        break;
+                    case EVENT_TYPE.MOSUE_DRAG:
+                        cmdHandler.handleMouseDrag(cmd);
+                        break;
+                    case EVENT_TYPE.MOUSE_DOWN: 
+                        cmdHandler.handleMouseDown(cmd);
+                        break;
+                    case EVENT_TYPE.MOUSE_UP:
+                        cmdHandler.handleMouseUp(cmd);
+                        break;
+                    case EVENT_TYPE.KEY_DOWN:
+                        cmdHandler.handleKeyDown(cmd);
+                        break;
+                    case EVENT_TYPE.COPY: 
+                        cmdHandler.handleCopy(cmd);
+                        break;
+                    case EVENT_TYPE.ENTER_SCREEN:
+                        cmdHandler.handleEnter(cmd);
+                        break;
+                    case EVENT_TYPE.QUERY_ACTIVE:
+                        cmdHandler.handlerQueryActive(cmd);
+                        break;
+                    case EVENT_TYPE.BROADCAST_IP:
+                        l('接受到广播信息', cmd);
+                        cmdHandler.handleBroadcastIp(cmd);
+                        break;
+                    case EVENT_TYPE.KEY_UP:
+                        cmdHandler.handleKeyUp(cmd);
+                        break;
+                    default:
+                        l('未能识别的命令：', cmd);
+                }
+            }
+        });
+
+        serverSocket.on('listening', () => {
+            const address = serverSocket.address();
+            l(`服务端启动完成，正在监听数据：${address.address}, 本地地址：${localAddress}:${address.port}`);
+        });
+
+        serverSocket.bind(config.port);
     }
-});
-
-server.on('listening', () => {
-    const address = server.address();
-    l(`服务端启动完成，正在监听数据：${address.address}, 本地地址：${localAddress}:${address.port}`);
-});
-
-server.bind(config.port);
+}
 
 // 处理器
 const cmdHandler = {
@@ -340,3 +342,5 @@ const cmdHandler = {
         }
     },
 }
+
+exports = module.exports = server;

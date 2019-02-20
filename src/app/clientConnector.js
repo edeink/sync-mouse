@@ -5,8 +5,8 @@ const dgram = require('dgram');
 const ncp = require('copy-paste');
 const robot = require('robotjs');
 
-const config = require('../config/config');
-const EVENT_TYPE = require('../config/eventType');
+const config = require('../../config/config');
+const EVENT_TYPE = require('../helper/eventType');
 
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');

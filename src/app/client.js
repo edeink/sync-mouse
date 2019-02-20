@@ -1,9 +1,10 @@
 const ioHook = require('iohook');
 const ncp = require('copy-paste');
 const robot = require('robotjs');
+const cpf = require('clipboard-file');
 
-const EVENT_TYPE = require('../config/eventType');
-const config = require('../config/config');
+const EVENT_TYPE = require('../helper/eventType');
+const config = require('../../config/config');
 const clientServer = require('./clientConnector');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
@@ -86,10 +87,12 @@ const clientHandler = {
         if (!isLock && event.ctrlKey && keycode === 46) {
             // 仅在非控制状态下，才传输控制粘贴板文本
             ncp.paste(function(nothing, copyText) {
-                send({
-                    c: EVENT_TYPE.COPY,
-                    s: copyText
-                });
+                if (copyText) {
+                    send({
+                        c: EVENT_TYPE.COPY,
+                        s: copyText
+                    });
+                }
             })
         } else if (event.ctrlKey && event.altKey && eventHelper.isCtrlGlobalKey(keycode)) {    
             // 自定义热键
@@ -294,11 +297,17 @@ const clientEventListener = {
     }
 }
 
-// 开启服务端事件监听
-clientEventListener.init();
-// 开启服务器接收器
-clientServer.init();
-clientServer.disconnect(function() {
-    clientHandler.forceLeave();
-    lw('已和服务器失去连接');
-});
+const client = {
+    init() {
+        // 开启服务端事件监听
+        clientEventListener.init();
+        // 开启服务器接收器
+        clientServer.init();
+        clientServer.disconnect(function() {
+            clientHandler.forceLeave();
+            lw('已和服务器失去连接');
+        });
+    }
+}
+
+exports = module.exports = client;

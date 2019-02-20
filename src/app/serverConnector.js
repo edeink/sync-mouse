@@ -1,8 +1,8 @@
 const robot = require('robotjs');
 const ncp = require('copy-paste');
 
-const EVENT_TYPE = require('../config/eventType');
-const config = require('../config/config');
+const EVENT_TYPE = require('../helper/eventType');
+const config = require('../../config/config');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
 

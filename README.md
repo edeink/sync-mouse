@@ -1,36 +1,40 @@
+## 简介
+
+以Win为主服务器，远程操作Mac的工具。
+
+（原计划支持多端鼠标键盘共享，因工程较大，延后支持）
+
 ## 运行必要环境
 
-因为该小程序是构建在robotjs之上，robotjs对当前运行环境有较多的要求
-[参考](https://github.com/octalmage/robotjs#building)
+因为该小程序是构建在`robotjs`之上，假若没有匹配的package，需要支持编译C++的环境：[参考](https://github.com/octalmage/robotjs#building)
 
-在不考虑linux的情况下，上面的安装可以化简为：
+- mac：安装`Xcode`
+- window：`npm install windows-build-tools`。[参考](https://www.npmjs.com/package/windows-build-tools)
 
-- mac：安装Xcode
-- window：以管理员身份运行`powershell`
-  - `npm install windows-build-tools`。[参考](https://www.npmjs.com/package/windows-build-tools)
-  - `cd node_modules/robotjs`目录并执行`node-gyp rebuild`
+## 安装使用
 
-## 目前版本
-
-因为某些已知的BUG，目前不推荐MAC作为`Client`，而Window不存在限制。
-
-## 使用方式
-
-1. 检查网络，保证局域网内，两台电脑可以互ping
-2. 服务端：`npm run s`
-3. 客户端: `npm run c`
+- `npm i sharemk -g`
+- Win：`sharemk s`
+- Mac：`sharemk c`
 
 ## 目前支持功能
 
-- 两个屏幕的连接（可通过鼠标移动 或 `Ctrl + [`）
-  - 鼠标移动到边界自动切换
-  - `Ctrl + [`（强制进入） 或 `Ctrl + ]`（强制退出）
+- 鼠标常规操作（移动，点击，滑动，拖拽等）
+- 键盘常规操作（非快捷键输入）
+- 突发情况快捷键：
+  - `Ctrl + [`（开启控制） 
+  -  `Ctrl + ]`（退出控制）
 
-- 鼠标 
-  - 左右键单击、滑轮滚动、拖拽
-- 键盘
-  - 非快捷键的输入，如一般的文本输入
-  - 快捷键：`Ctrl + C`：仅支持文本
+
+## 开发相关
+
+以下为开发相关（暂搁于此），使用者退散~
+
+## Dev调试运行
+
+1. `npm run s`（现阶段为Win系统）
+2. `npm run c`（现阶段为Mac或Linux系统）
+3. 当鼠标到达边界，即可操作额外的电脑
 
 ## 开发计划
 
@@ -48,17 +52,23 @@
 
 ### 未来功能
 
-以下功能因为工作量较大，所以延后支持：
+原计划是支持三端的，因为一些已知的问题，且暂时没有精力解决，所以延后了。
 
-1. 发布到npm且通过nw.js封装成App
-2. 支持三个或以上屏幕
+- v0.2.x：支持三端
+- v0.3.x：封装App，支持三个或以上屏幕
 
-### BUG
+## BUG统计
+
+#### 已修复
 
 - [x] 鼠标进入和退出时不够流畅（因为mousemove触发过多，应该throttle）
-
 - [x] 比较难唤起Mac的程序坞（接近Mac程序坞时，mousemove应该平滑移动）
+- [x] VSCODE双击时无法通过模拟获取
+- [x] 单个修饰键无法使用
+
+#### 未修复
 
 - [ ] Mac Hook无法监听多个键盘事件（iohook的BUG，[Link](https://github.com/wilix-team/iohook/issues/124)）
-- [ ] VSCODE双击时无法通过模拟获取
-- [ ] 单个修饰键无法使用
+
+
+

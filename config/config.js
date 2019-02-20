@@ -1,4 +1,4 @@
-const eventHelper = require('../helper/eventHelper');
+const eventHelper = require('../src/helper/eventHelper');
 
 const ENTER_DIRECTION = eventHelper.ENTER_DIRECTION; 
 
