@@ -3,13 +3,13 @@ const robot = require('robotjs');
 const ncp = require('copy-paste');
 
 const config = require('../../config/config');
-const EVENT_TYPE = require('../helper/eventType');
+const COMMIST = require('../_comminst/COMMIST');
 const serverClient = require('./serverConnector');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
-const debugHelper = require('../helper/debugHelper');
+const loggerHelper = require('../helper/logger');
 
-const { l, lw, le } = debugHelper;
+const { l, lw, le } = loggerHelper;
 
 const serverSocket = dgram.createSocket('udp4');
 
@@ -74,44 +74,44 @@ const server = {
             let cmd = JSON.parse(msg.toString());
             if (cmd) {
                 switch(cmd.c) {
-                    case EVENT_TYPE.SEND_IP:
+                    case COMMIST.SEND_IP:
                         cmdHandler.handleRecieveIp(cmd);
                         break;
-                    case EVENT_TYPE.MOUSE_MOVE:
+                    case COMMIST.MOUSE_MOVE:
                         cmdHandler.handleMouseMove(cmd);
                         break;
-                    case EVENT_TYPE.MOUSE_CLICK:
+                    case COMMIST.MOUSE_CLICK:
                         cmdHandler.handleMouseClick(cmd);
                         break;
-                    case EVENT_TYPE.MOUSE_WHEEL:
+                    case COMMIST.MOUSE_WHEEL:
                         cmdHandler.handleMouseWheel(cmd);
                         break;
-                    case EVENT_TYPE.MOSUE_DRAG:
+                    case COMMIST.MOSUE_DRAG:
                         cmdHandler.handleMouseDrag(cmd);
                         break;
-                    case EVENT_TYPE.MOUSE_DOWN: 
+                    case COMMIST.MOUSE_DOWN: 
                         cmdHandler.handleMouseDown(cmd);
                         break;
-                    case EVENT_TYPE.MOUSE_UP:
+                    case COMMIST.MOUSE_UP:
                         cmdHandler.handleMouseUp(cmd);
                         break;
-                    case EVENT_TYPE.KEY_DOWN:
+                    case COMMIST.KEY_DOWN:
                         cmdHandler.handleKeyDown(cmd);
                         break;
-                    case EVENT_TYPE.COPY: 
+                    case COMMIST.COPY: 
                         cmdHandler.handleCopy(cmd);
                         break;
-                    case EVENT_TYPE.ENTER_SCREEN:
+                    case COMMIST.ENTER_SCREEN:
                         cmdHandler.handleEnter(cmd);
                         break;
-                    case EVENT_TYPE.QUERY_ACTIVE:
+                    case COMMIST.QUERY_ACTIVE:
                         cmdHandler.handlerQueryActive(cmd);
                         break;
-                    case EVENT_TYPE.BROADCAST_IP:
+                    case COMMIST.BROADCAST_IP:
                         l('接受到广播信息', cmd);
                         cmdHandler.handleBroadcastIp(cmd);
                         break;
-                    case EVENT_TYPE.KEY_UP:
+                    case COMMIST.KEY_UP:
                         cmdHandler.handleKeyUp(cmd);
                         break;
                     default:

@@ -6,11 +6,11 @@ const ncp = require('copy-paste');
 const robot = require('robotjs');
 
 const config = require('../../config/config');
-const EVENT_TYPE = require('../helper/eventType');
+const COMMIST = require('../_comminst/COMMIST');
 
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
-const debugHelper = require('../helper/debugHelper');
+const loggerHelper = require('../helper/logger');
 
 const server = dgram.createSocket('udp4');
 const ENTER_SCREEN = eventHelper.ENTER_DIRECTION;
@@ -19,7 +19,7 @@ const send = connectHelper.send;
 const broadcast = connectHelper.broadcast;
 const localAddress = connectHelper.getLocalAddress();
 const { screenWidth, screenHeight } = eventHelper.getLocalScreenSize();
-const { l, lw, le } = debugHelper;
+const { l, lw, le } = loggerHelper;
 
 const dc = {
     isDebug : 1,
@@ -66,22 +66,22 @@ const clientServer = {
             let cmd = JSON.parse(msg.toString());
             if (cmd) {
                 switch(cmd.c) {
-                    case EVENT_TYPE.RECIEVE_IP:
+                    case COMMIST.RECIEVE_IP:
                         clientServer.recieveServerIp(cmd);
                         break;
-                    case EVENT_TYPE.COPY: 
+                    case COMMIST.COPY: 
                         cmdHandler.handleCopy(cmd);
                         break;
-                    case EVENT_TYPE.AFTER_ENTER: 
+                    case COMMIST.AFTER_ENTER: 
                         cmdHandler.handleEnter();
                         break;
-                    case EVENT_TYPE.LEAVE_SCREEN:
+                    case COMMIST.LEAVE_SCREEN:
                         cmdHandler.handleLeave(cmd);
                         break;
-                    case EVENT_TYPE.RECIEVE_ACTIVE:
+                    case COMMIST.RECIEVE_ACTIVE:
                         clientServer.recieveServerActive();
                         break;
-                    case EVENT_TYPE.BROADCAST_IP:
+                    case COMMIST.BROADCAST_IP:
                         // 收到自身的广播，可忽略该命令
                         l('收到广播', cmd);
                         break;
@@ -146,7 +146,7 @@ const clientServer = {
         }
         let enterFunc = function() {
             send({
-                c: EVENT_TYPE.ENTER_SCREEN,
+                c: COMMIST.ENTER_SCREEN,
                 d: direction,
                 p: {
                     xp: pos.x / screenWidth,
@@ -211,8 +211,13 @@ const clientServer = {
     },
     // 初始化时向服务端提交客户端地址，以方便双向连接
     sendIp() {
+        let serverIp = config.serverIp;
+        if (!serverIp) {
+            lw('无法获取服务端的Ip');
+            return;
+        }
         send({
-            c: EVENT_TYPE.SEND_IP,
+            c: COMMIST.SEND_IP,
             addr: localAddress,
         });
         l('连接服务端：（指定Ip）', config.serverIp);
@@ -235,7 +240,7 @@ const clientServer = {
     // 通过广播的方式发送Ip地址
     broadcastIp() {
         broadcast({
-            c: EVENT_TYPE.BROADCAST_IP,
+            c: COMMIST.BROADCAST_IP,
             group: config.group,
             addr: localAddress,
         });
@@ -273,7 +278,7 @@ const clientServer = {
     // 检查服务端是否断开链接
     checkServerActive() {
         send({
-            c: EVENT_TYPE.QUERY_ACTIVE
+            c: COMMIST.QUERY_ACTIVE
         });
         clientServer._checkActiveKey = setTimeout(function() {        
             // 和服务端失去连接时触发内容

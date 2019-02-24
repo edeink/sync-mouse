@@ -1,7 +1,7 @@
 const robot = require('robotjs');
 const ncp = require('copy-paste');
 
-const EVENT_TYPE = require('../helper/eventType');
+const COMMIST = require('../_comminst/COMMIST');
 const config = require('../../config/config');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
@@ -31,19 +31,19 @@ const serverClient = {
     addIp(ip) {
         ips.add(ip);
         send({
-            c: EVENT_TYPE.RECIEVE_IP,
+            c: COMMIST.RECIEVE_IP,
         }, ip, clientPort);
     },
     active(direction) {
         serverClient._enterDirection = direction;
         serverClient._isActive = true;
         serverSend({
-            c: EVENT_TYPE.AFTER_ENTER
+            c: COMMIST.AFTER_ENTER
         });
     },
     sendActive() {
         serverSend({
-            c: EVENT_TYPE.RECIEVE_ACTIVE,
+            c: COMMIST.RECIEVE_ACTIVE,
             addr: localAddress,
         });
     },
@@ -72,7 +72,7 @@ const serverClient = {
         serverClient._isActive = false;
         let pos = robot.getMousePos();
         serverSend({
-            c: EVENT_TYPE.LEAVE_SCREEN,
+            c: COMMIST.LEAVE_SCREEN,
             d: serverClient._enterDirection,
             p: {
                 xp: pos.x / screenWidth,
@@ -83,7 +83,7 @@ const serverClient = {
     sendCopyText() {
         ncp.paste(function(nothing, copyText) {
             serverSend({
-                c: EVENT_TYPE.COPY,
+                c: COMMIST.COPY,
                 s: copyText,
             });
         })

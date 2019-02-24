@@ -3,19 +3,19 @@ const ncp = require('copy-paste');
 const robot = require('robotjs');
 const cpf = require('clipboard-file');
 
-const EVENT_TYPE = require('../helper/eventType');
+const COMMIST = require('../_comminst/COMMIST');
 const config = require('../../config/config');
 const clientServer = require('./clientConnector');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
-const debugHelper = require('../helper/debugHelper');
+const loggerHelper = require('../helper/logger');
 const utils = require('../helper/util');
 
 const send = connectHelper.send;
 const ENTER_DIRECTION = eventHelper.ENTER_DIRECTION;
 const OFFSET = eventHelper.OFFSET;
 const { screenWidth, screenHeight } = eventHelper.getLocalScreenSize();
-const { l, lw, le } = debugHelper;
+const { l, lw, le } = loggerHelper;
 const { throttle } = utils;
 
 const dc = {
@@ -51,7 +51,7 @@ const clientHandler = {
         }
         robot.moveMouse(prePos.x, prePos.y);
         send({
-            c: EVENT_TYPE.MOUSE_MOVE, 
+            c: COMMIST.MOUSE_MOVE, 
             p: {
                 x: x,
                 y: y
@@ -60,7 +60,7 @@ const clientHandler = {
     },
     handleWheel: function(event) {
         let msg = {
-            c: EVENT_TYPE.MOUSE_WHEEL,
+            c: COMMIST.MOUSE_WHEEL,
             a: event.amount,
             r: event.rotation
         }
@@ -74,7 +74,7 @@ const clientHandler = {
         if(x === 0 && y === 0) { return; }
         robot.moveMouse(prePos.x, prePos.y);
         send({
-            c: EVENT_TYPE.MOSUE_DRAG,
+            c: COMMIST.MOSUE_DRAG,
             p: {
                 x: x,
                 y: y
@@ -89,7 +89,7 @@ const clientHandler = {
             ncp.paste(function(nothing, copyText) {
                 if (copyText) {
                     send({
-                        c: EVENT_TYPE.COPY,
+                        c: COMMIST.COPY,
                         s: copyText
                     });
                 }
@@ -104,7 +104,7 @@ const clientHandler = {
             // 普通键盘
             if (!isLock) { return; }
             let msg = {
-                c: EVENT_TYPE.KEY_DOWN,
+                c: COMMIST.KEY_DOWN,
                 k: event.keycode,
                 m: {},
             };
@@ -216,7 +216,7 @@ const clientEventListener = {
                     l('down', JSON.stringify(event));
                 }
                 send({
-                    c: EVENT_TYPE.MOUSE_DOWN
+                    c: COMMIST.MOUSE_DOWN
                 })
             }
         })
@@ -228,7 +228,7 @@ const clientEventListener = {
                     l('up', JSON.stringify(event));
                 }
                 send({
-                    c: EVENT_TYPE.MOUSE_UP
+                    c: COMMIST.MOUSE_UP
                 })
             }
         })
@@ -247,7 +247,7 @@ const clientEventListener = {
                         robot.mouseClick();
                     }
                     send({
-                        c: EVENT_TYPE.MOUSE_CLICK,
+                        c: COMMIST.MOUSE_CLICK,
                         b: event.button,
                     })
                 }
@@ -286,7 +286,7 @@ const clientEventListener = {
             }
             if (isLock) {
                 let msg = {
-                    c: EVENT_TYPE.KEY_UP,
+                    c: COMMIST.KEY_UP,
                     k: event.keycode,
                 }
                 send(msg);

@@ -1,3 +1,7 @@
+/**
+ * 日志，现阶段暂通过console输出
+ */
+
 function l() {
     console.log(...arguments);
 }

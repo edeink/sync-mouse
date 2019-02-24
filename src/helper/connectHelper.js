@@ -2,7 +2,7 @@ const dgram = require('dgram');
 const interfaces = require('os').networkInterfaces();
 
 const config = require('../../config/config');
-const debugHelper = require('./debugHelper');
+const loggerHelper = require('./logger');
 let client = dgram.createSocket('udp4');
 
 let ip = null;
@@ -10,7 +10,7 @@ let netmask = null;
 let serverIp = config.serverIp;
 let broadcastIp = null; // '10.13.159.255'
 
-const {l, lw, le} = debugHelper;
+const {l, lw, le} = loggerHelper;
 
 // 获取本机局域网Ip
 function initNetworkMsg() {
