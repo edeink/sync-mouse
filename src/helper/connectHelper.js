@@ -29,8 +29,8 @@ function initNetworkMsg() {
     return ip;
 }
 
-function setServerIp(serverIp) {
-    serverIp = serverIp;
+function setServerIp(ip) {
+    serverIp = ip;
 }
 
 function _send(obj, ip, port) {
@@ -54,10 +54,7 @@ function broadcast(obj, port) {
         socket.setBroadcast(true);
         const message = Buffer.from(JSON.stringify(obj));
         const realPort = port ? port : config.port;
-        // const broadcastIp = _getBroadcastAddress(ip, netmask);
-        _getBroadcastAddress
-        const broadcastIp = _getBroadcastAddress(ip, '255.255.254.0');
-        l('广播消息', obj, realPort, broadcastIp);
+        const broadcastIp = _getBroadcastAddress(ip, netmask);
         socket.send(message, 0, message.length, realPort, broadcastIp, function(err, bytes) {
             socket.close();
         });

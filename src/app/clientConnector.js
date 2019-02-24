@@ -83,7 +83,6 @@ const clientServer = {
                         break;
                     case COMMIST.BROADCAST_IP:
                         // 收到自身的广播，可忽略该命令
-                        l('收到广播', cmd);
                         break;
                     default:
                         lw('未能识别的命令：', cmd);

@@ -32,6 +32,7 @@ const serverClient = {
         ips.add(ip);
         send({
             c: COMMIST.RECIEVE_IP,
+            addr: localAddress,
         }, ip, clientPort);
     },
     active(direction) {

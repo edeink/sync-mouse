@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "description": "share mouse and keyboard, support mac、linux and windows",
   "scripts": {
-    "s": "./bin/sharemk.js -s",
-    "c": "./bin/sharemk.js -c",
+    "s": "node ./test/server.js",
+    "c": "node ./test/client.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

@@ -108,7 +108,6 @@ const server = {
                         cmdHandler.handlerQueryActive(cmd);
                         break;
                     case COMMIST.BROADCAST_IP:
-                        l('接受到广播信息', cmd);
                         cmdHandler.handleBroadcastIp(cmd);
                         break;
                     case COMMIST.KEY_UP:
@@ -338,7 +337,7 @@ const cmdHandler = {
     },
     handleBroadcastIp(cmd) {
         if (cmd.group === config.group) {
-            serverClient.sendActive();
+            serverClient.addIp(cmd.addr);
         }
     },
 }
