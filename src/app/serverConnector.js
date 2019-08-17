@@ -1,7 +1,7 @@
 const robot = require('robotjs');
 const ncp = require('copy-paste');
 
-const COMMIST = require('../_comminst/COMMIST');
+const SYMBOL = require('../symbol/symbol');
 const config = require('../../config/config');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
@@ -13,10 +13,6 @@ const ips = new Set();
 const { screenWidth, screenHeight } = eventHelper.getLocalScreenSize();
 const clientPort = config.port;
 const localAddress = connectHelper.getLocalAddress();
-
-function l() {
-    console.log(...arguments);
-}
 
 function serverSend() {
     send(...arguments, ips, clientPort);
@@ -31,7 +27,7 @@ const serverClient = {
     addIp(ip) {
         ips.add(ip);
         send({
-            c: COMMIST.RECIEVE_IP,
+            c: SYMBOL.RECEIVE_IP,
             addr: localAddress,
         }, ip, clientPort);
     },
@@ -39,12 +35,12 @@ const serverClient = {
         serverClient._enterDirection = direction;
         serverClient._isActive = true;
         serverSend({
-            c: COMMIST.AFTER_ENTER
+            c: SYMBOL.AFTER_ENTER
         });
     },
     sendActive() {
         serverSend({
-            c: COMMIST.RECIEVE_ACTIVE,
+            c: SYMBOL.RECEIVE_ACTIVE,
             addr: localAddress,
         });
     },
@@ -73,7 +69,7 @@ const serverClient = {
         serverClient._isActive = false;
         let pos = robot.getMousePos();
         serverSend({
-            c: COMMIST.LEAVE_SCREEN,
+            c: SYMBOL.LEAVE_SCREEN,
             d: serverClient._enterDirection,
             p: {
                 xp: pos.x / screenWidth,
@@ -84,7 +80,7 @@ const serverClient = {
     sendCopyText() {
         ncp.paste(function(nothing, copyText) {
             serverSend({
-                c: COMMIST.COPY,
+                c: SYMBOL.COPY,
                 s: copyText,
             });
         })

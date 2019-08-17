@@ -1,11 +1,8 @@
-const fs = require("fs");
-const path = require('path');
 const net = require("net");
-const COMMIST = require('../_comminst/COMMIST');
+const SYMBOL = require('../symbol/symbol');
 const config = require('../../config/config');
 const loggerHelper = require('./logger');
-const {l, lw, le} = loggerHelper;
-const fileData = 'Hello World';
+const {l} = loggerHelper;
 
 function send(obj, sender) {
     const message = Buffer.from(JSON.stringify(obj));
@@ -16,7 +13,7 @@ function initServer() {
     const server = net.createServer(function(socket){
         socket.on('data', function(data) {
             l(data.toString());
-            if(data.m === COMMIST.READY_TO_RECIEVE_FILE) {
+            if(data.m === SYMBOL.READY_TO_RECEIVE_FILE) {
                 send(server);
             }
         })
@@ -47,4 +44,4 @@ function initClient() {
 exports = module.exports = {
     initServer,
     initClient,
-}
+};

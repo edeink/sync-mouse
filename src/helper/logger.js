@@ -16,4 +16,4 @@ exports = module.exports = {
     l,
     lw,
     le,
-}
+};

@@ -8,9 +8,8 @@ let client = dgram.createSocket('udp4');
 let ip = null;
 let netmask = null;
 let serverIp = config.serverIp;
-let broadcastIp = null; // '10.13.159.255'
 
-const {l, lw, le} = loggerHelper;
+const { lw } = loggerHelper;
 
 // 获取本机局域网Ip
 function initNetworkMsg() {
@@ -49,13 +48,13 @@ function _send(obj, ip, port) {
 
 // 广播
 function broadcast(obj, port) {
-    var socket = dgram.createSocket("udp4");
+    let socket = dgram.createSocket("udp4");
     socket.bind(port, ip, function () {
         socket.setBroadcast(true);
         const message = Buffer.from(JSON.stringify(obj));
         const realPort = port ? port : config.port;
         const broadcastIp = _getBroadcastAddress(ip, netmask);
-        socket.send(message, 0, message.length, realPort, broadcastIp, function(err, bytes) {
+        socket.send(message, 0, message.length, realPort, broadcastIp, function() {
             socket.close();
         });
     });
@@ -99,4 +98,4 @@ exports = module.exports = {
     send,
     broadcast,
     setServerIp,
-}
+};

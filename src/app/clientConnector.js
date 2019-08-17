@@ -6,15 +6,13 @@ const ncp = require('copy-paste');
 const robot = require('robotjs');
 
 const config = require('../../config/config');
-const COMMIST = require('../_comminst/COMMIST');
+const SYMBOL = require('../symbol/symbol');
 
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
 const loggerHelper = require('../helper/logger');
 
 const server = dgram.createSocket('udp4');
-const ENTER_SCREEN = eventHelper.ENTER_DIRECTION;
-const OFFSET = eventHelper.OFFSET;
 const send = connectHelper.send;
 const broadcast = connectHelper.broadcast;
 const localAddress = connectHelper.getLocalAddress();
@@ -24,7 +22,7 @@ const { l, lw, le } = loggerHelper;
 const dc = {
     isDebug : 1,
     copy: 1,
-}
+};
 
 // 获取本机IP地址
 
@@ -33,7 +31,7 @@ const clientServer = {
     _afterEnter: null, // 进入服务器
     _afterLeave: null, // 离开服务器
     _afterDisconnect: null, // 和服务器端口连接
-    _waitforEnter: false,
+    _waitForEnter: false,
     _delayToEnter: false, // 防止多次尝试连接服务器
     _isActive: false, // 检测是否控制服务器
     _isConnect: false, // 检测是否仍和服务器保持链接
@@ -62,26 +60,26 @@ const clientServer = {
             server.close();
         }); 
 
-        server.on('message', (msg, rinfo) => {
+        server.on('message', (msg) => {
             let cmd = JSON.parse(msg.toString());
             if (cmd) {
                 switch(cmd.c) {
-                    case COMMIST.RECIEVE_IP:
-                        clientServer.recieveServerIp(cmd);
+                    case SYMBOL.RECEIVE_IP:
+                        clientServer.receiveServerIp(cmd);
                         break;
-                    case COMMIST.COPY: 
+                    case SYMBOL.COPY: 
                         cmdHandler.handleCopy(cmd);
                         break;
-                    case COMMIST.AFTER_ENTER: 
+                    case SYMBOL.AFTER_ENTER: 
                         cmdHandler.handleEnter();
                         break;
-                    case COMMIST.LEAVE_SCREEN:
+                    case SYMBOL.LEAVE_SCREEN:
                         cmdHandler.handleLeave(cmd);
                         break;
-                    case COMMIST.RECIEVE_ACTIVE:
-                        clientServer.recieveServerActive();
+                    case SYMBOL.RECEIVE_ACTIVE:
+                        clientServer.receiveServerActive();
                         break;
-                    case COMMIST.BROADCAST_IP:
+                    case SYMBOL.BROADCAST_IP:
                         // 收到自身的广播，可忽略该命令
                         break;
                     default:
@@ -104,17 +102,14 @@ const clientServer = {
 
         server.bind(config.port, localAddress);
     },
-    // 是否正在控制服务端
-    isActive() {
-        return clientServer._isActive;
-    },
     // 等待服务端反馈
     isWaitingForEnter () {
-        return clientServer._waitforEnter;
+        return clientServer._waitForEnter;
     },
     /**
      * 请求进入服务端
-     * @param {number} enterDirection 触发进入服务端的方向
+     * @param cmd
+     * @param afterEnterCb
      */
     enter(cmd, afterEnterCb) {
         let { x, y, direction } = cmd;
@@ -122,11 +117,11 @@ const clientServer = {
             return;
         }
         let pos = robot.getMousePos();
-        clientServer._waitforEnter = true;
+        clientServer._waitForEnter = true;
         clientServer._afterLeave = null;
         // 超过时间，代表服务端无反馈
         let timeoutKey = setTimeout(function() {
-            clientServer._waitforEnter = false;
+            clientServer._waitForEnter = false;
             lw('暂时无法连接服务器, 请稍后再试');
         }, config.timeout);
         robot.moveMouse(x, y);
@@ -134,7 +129,7 @@ const clientServer = {
         // 收到服务器允许进入后的回调事件
         clientServer._afterEnter = function() {
             clearTimeout(timeoutKey);
-            clientServer._waitforEnter = false;
+            clientServer._waitForEnter = false;
             clientServer._isActive = true;
             clientServer._delayToEnter = true;
             setTimeout(function() {
@@ -142,10 +137,10 @@ const clientServer = {
             }, config.timeout);
             // l('正在控制服务端');
             afterEnterCb && afterEnterCb();
-        }
+        };
         let enterFunc = function() {
             send({
-                c: COMMIST.ENTER_SCREEN,
+                c: SYMBOL.ENTER_SCREEN,
                 d: direction,
                 p: {
                     xp: pos.x / screenWidth,
@@ -157,7 +152,7 @@ const clientServer = {
                 },
                 env: eventHelper.getSystem()
             });
-        }
+        };
         // 申请进入服务器
         if (clientServer._isConnect === false) {
             clientServer._afterConnect = enterFunc;
@@ -216,7 +211,7 @@ const clientServer = {
             return;
         }
         send({
-            c: COMMIST.SEND_IP,
+            c: SYMBOL.SEND_IP,
             addr: localAddress,
         });
         l('连接服务端：（指定Ip）', config.serverIp);
@@ -239,7 +234,7 @@ const clientServer = {
     // 通过广播的方式发送Ip地址
     broadcastIp() {
         broadcast({
-            c: COMMIST.BROADCAST_IP,
+            c: SYMBOL.BROADCAST_IP,
             group: config.group,
             addr: localAddress,
         });
@@ -261,7 +256,7 @@ const clientServer = {
         }
     },
     // 收到服务端接受反馈
-    recieveServerIp(cmd) {
+    receiveServerIp(cmd) {
         clientServer._isFinishSend = true;
         clearInterval(clientServer._sendingIpIntervalKey);
         clientServer._isNotConnectTime = 0;
@@ -277,7 +272,7 @@ const clientServer = {
     // 检查服务端是否断开链接
     checkServerActive() {
         send({
-            c: COMMIST.QUERY_ACTIVE
+            c: SYMBOL.QUERY_ACTIVE
         });
         clientServer._checkActiveKey = setTimeout(function() {        
             // 和服务端失去连接时触发内容
@@ -298,7 +293,7 @@ const clientServer = {
         }, config.timeout);
     },
     // 收到服务端答复，证明没有断开链接
-    recieveServerActive() {
+    receiveServerActive() {
         clientServer._isConnect = true;
         clientServer._isNotConnectTime = 0;
         clearTimeout(clientServer._checkActiveKey);
@@ -307,6 +302,6 @@ const clientServer = {
             clientServer.checkServerActive();
         }, config.timeout);
     }
-}
+};
 
 exports = module.exports = clientServer;

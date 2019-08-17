@@ -3,17 +3,16 @@ const robot = require('robotjs');
 const ncp = require('copy-paste');
 
 const config = require('../../config/config');
-const COMMIST = require('../_comminst/COMMIST');
+const SYMBOL = require('../symbol/symbol');
 const serverClient = require('./serverConnector');
 const eventHelper = require('../helper/eventHelper');
 const connectHelper = require('../helper/connectHelper');
 const loggerHelper = require('../helper/logger');
 
-const { l, lw, le } = loggerHelper;
+const { l } = loggerHelper;
 
 const serverSocket = dgram.createSocket('udp4');
 
-const keyMap = eventHelper.KEY_MAP;
 const OFFSET = eventHelper.OFFSET;
 const { screenWidth, screenHeight } = eventHelper.getLocalScreenSize();
 const localAddress = connectHelper.getLocalAddress();
@@ -33,7 +32,7 @@ const func = {
     mouseDrag: 1,
     keyDown: 1,
     copy: 1,
-}
+};
 
 const log = {
     mouseMove: 0,
@@ -42,7 +41,7 @@ const log = {
     mouseDrag: 0,
     keyDown: 0,
     copy: 0,
-}
+};
 
 function getNextPos(offsetPos) {
     let currPos = robot.getMousePos();
@@ -70,47 +69,47 @@ const server = {
             serverSocket.close();
         }); 
 
-        serverSocket.on('message', (msg, rinfo) => {
+        serverSocket.on('message', (msg) => {
             let cmd = JSON.parse(msg.toString());
             if (cmd) {
                 switch(cmd.c) {
-                    case COMMIST.SEND_IP:
-                        cmdHandler.handleRecieveIp(cmd);
+                    case SYMBOL.SEND_IP:
+                        cmdHandler.handleReceiveIp(cmd);
                         break;
-                    case COMMIST.MOUSE_MOVE:
+                    case SYMBOL.MOUSE_MOVE:
                         cmdHandler.handleMouseMove(cmd);
                         break;
-                    case COMMIST.MOUSE_CLICK:
+                    case SYMBOL.MOUSE_CLICK:
                         cmdHandler.handleMouseClick(cmd);
                         break;
-                    case COMMIST.MOUSE_WHEEL:
+                    case SYMBOL.MOUSE_WHEEL:
                         cmdHandler.handleMouseWheel(cmd);
                         break;
-                    case COMMIST.MOSUE_DRAG:
+                    case SYMBOL.MOUSE_DRAG:
                         cmdHandler.handleMouseDrag(cmd);
                         break;
-                    case COMMIST.MOUSE_DOWN: 
+                    case SYMBOL.MOUSE_DOWN: 
                         cmdHandler.handleMouseDown(cmd);
                         break;
-                    case COMMIST.MOUSE_UP:
+                    case SYMBOL.MOUSE_UP:
                         cmdHandler.handleMouseUp(cmd);
                         break;
-                    case COMMIST.KEY_DOWN:
+                    case SYMBOL.KEY_DOWN:
                         cmdHandler.handleKeyDown(cmd);
                         break;
-                    case COMMIST.COPY: 
+                    case SYMBOL.COPY: 
                         cmdHandler.handleCopy(cmd);
                         break;
-                    case COMMIST.ENTER_SCREEN:
+                    case SYMBOL.ENTER_SCREEN:
                         cmdHandler.handleEnter(cmd);
                         break;
-                    case COMMIST.QUERY_ACTIVE:
+                    case SYMBOL.QUERY_ACTIVE:
                         cmdHandler.handlerQueryActive(cmd);
                         break;
-                    case COMMIST.BROADCAST_IP:
+                    case SYMBOL.BROADCAST_IP:
                         cmdHandler.handleBroadcastIp(cmd);
                         break;
-                    case COMMIST.KEY_UP:
+                    case SYMBOL.KEY_UP:
                         cmdHandler.handleKeyUp(cmd);
                         break;
                     default:
@@ -126,7 +125,7 @@ const server = {
 
         serverSocket.bind(config.port);
     }
-}
+};
 
 // 处理器
 const cmdHandler = {
@@ -220,7 +219,7 @@ const cmdHandler = {
         let amount = cmd.a;
         let rotation = cmd.r;
         let wheelY = 0;
-        let offset = amount * 10 * config.accerelate;
+        let offset = amount * 10 * config.sensitivity;
         if(rotation === 1) {
             wheelY = wheelY - offset;
         } else if (rotation === -1) {
@@ -266,9 +265,8 @@ const cmdHandler = {
             l('up', cmd);
         }
         let currTime = new Date().getTime();
-        if (currTime - preDownTime < config.doubleclick) {
+        if (currTime - preDownTime < config.dblclick) {
             robot.mouseToggle("up");
-             // fix: 部分编辑器(down & up) * 2 !== doubleclick
              setTimeout(function() {
                 robot.mouseClick('left', true);
              })
@@ -296,10 +294,10 @@ const cmdHandler = {
         }
         let position = cmd.p;
         let screenSize = cmd.s;
-        screenRatio = (screenSize.sw / screenWidth).toFixed(2) / config.accerelate;
+        screenRatio = (screenSize.sw / screenWidth).toFixed(2) / config.sensitivity;
         let direction = cmd.d;
         let x, y;
-        remoteSystem = cmd.env
+        remoteSystem = cmd.env;
         switch (direction) {
             case eventHelper.ENTER_DIRECTION.TOP: {
                 // 上边界，即从下部进入
@@ -329,7 +327,7 @@ const cmdHandler = {
         robot.moveMouse(x, y);
         serverClient.active(direction);
     },
-    handleRecieveIp(cmd) {
+    handleReceiveIp(cmd) {
         serverClient.addIp(cmd.addr);
     },
     handlerQueryActive() {
@@ -340,6 +338,6 @@ const cmdHandler = {
             serverClient.addIp(cmd.addr);
         }
     },
-}
+};
 
 exports = module.exports = server;

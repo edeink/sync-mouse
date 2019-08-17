@@ -4,7 +4,7 @@ const SYSTEM_TYPE = {
     MAC: 0,
     WIN: 1,
     LINUS: 2,
-}
+};
 let system;
 let screenSize;
 
@@ -19,7 +19,7 @@ const KEY_MAP = {
     3675: 'command', 3612: 'enter',  61007: 'end', 60999: 'home',
     57416: 'up', 57419: 'left', 57421: 'right', 57424: 'down', 
     61000: 'up', 61003: 'left', 61005: 'right', 61008: 'down', 
-}
+};
 
 // const VALUE_WORD = {
 //     A: 30, B: 48, C: 46, D: 32, E: 18, F: 33, G: 34, H: 35, I: 23, J: 36, K: 37, L: 38, M: 50, N: 49,
@@ -31,33 +31,33 @@ const CAPS_LOCK = 58;
 const KEY_WORD = {
     30: 'A', 48: 'B', 46: 'C', 32: 'D', 18: 'E', 33: 'F', 34: 'G', 35: 'H', 23: 'I', 36: 'J', 37: 'K', 38: 'L', 50: 'M', 49: 'N',
     24: 'O', 25: 'P', 16: 'Q', 19: 'R', 31: 'S', 20: 'T', 22: 'U', 47: 'V', 17: 'W', 45: 'X', 21: 'Y', 44: 'Z',
-}
+};
 
 const MOUSE_MAP = {
     LEFT: 1,
     RIGHT: 2,
     MIDDLE: 3,
-}
+};
 
 const MODIFY_KEY = {
-    CONTRROL: 'control',
+    CONTROL: 'control',
     COMMAND: 'command',
     ALT: 'alt',
     SHIFT: 'shift'
-}
+};
 
 const MOUSE_KEY_NAME = {
     1: 'left',
     2: 'right',
     3: 'middle'
-}
+};
 
 const ENTER_DIRECTION = {
     TOP: 0,
     RIGHT: 1,
     BOTTOM: 2,
     LEFT: 3,
-}
+};
 
 // 和ENTER_DIRECTION的值刚好相反
 const LEAVE_DIRECTION = {
@@ -65,13 +65,13 @@ const LEAVE_DIRECTION = {
     RIGHT: 3,
     BOTTOM: 0,
     LEFT: 1,
-}
+};
 
 const OFFSET = {
     LEAVE: 10, // 监听离开的距离
     SERVER_LEAVE: 0, // 服务端离开的距离
     ENTER: 30, // 进入时即偏移的距离
-}
+};
 
 function getKeyValue(keyCode) {
     return KEY_MAP[keyCode];
@@ -89,9 +89,9 @@ function getKeyModify(modify, remoteSystem) {
     } else if(modify === 42 || modify.s) {
         return MODIFY_KEY.SHIFT
     } else if(modify === 29 || modify.c) {
-        return isDiffAndIncludMac ? MODIFY_KEY.COMMAND : MODIFY_KEY.CONTRROL;
+        return isDiffAndIncludMac ? MODIFY_KEY.COMMAND : MODIFY_KEY.CONTROL;
     } else if(modify === 3675 || modify.m) {
-        return isDiffAndIncludMac ? MODIFY_KEY.CONTRROL : MODIFY_KEY.COMMAND;
+        return isDiffAndIncludMac ? MODIFY_KEY.CONTROL : MODIFY_KEY.COMMAND;
     } else {
         return undefined;
     }

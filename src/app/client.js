@@ -1,9 +1,9 @@
 const ioHook = require('iohook');
 const ncp = require('copy-paste');
 const robot = require('robotjs');
-const cpf = require('clipboard-file');
+// const cpf = require('clipboard-file');
 
-const COMMIST = require('../_comminst/COMMIST');
+const SYMBOL = require('../symbol/symbol');
 const config = require('../../config/config');
 const clientServer = require('./clientConnector');
 const eventHelper = require('../helper/eventHelper');
@@ -15,7 +15,7 @@ const send = connectHelper.send;
 const ENTER_DIRECTION = eventHelper.ENTER_DIRECTION;
 const OFFSET = eventHelper.OFFSET;
 const { screenWidth, screenHeight } = eventHelper.getLocalScreenSize();
-const { l, lw, le } = loggerHelper;
+const { l, lw } = loggerHelper;
 const { throttle } = utils;
 
 const dc = {
@@ -26,7 +26,7 @@ const dc = {
     mouseDrag: 0,
     keydown: 0,
     copy: 0,
-}
+};
 
 let prePos = null;
 let isLock = false;
@@ -45,13 +45,13 @@ function getOffsetPos() {
 // 客户端事件处理
 const clientHandler = {
     handleMove: function(x, y) {
-        if(Math.abs(x) <= 1 && Math.abs(y) <= 1) { return; }
+        if(Math.abs(x) <= 1 && Math.abs() <= 1) { return; }
         if (dc.isDebug && dc.mouseMove) {    
             l('move', x, y);
         }
         robot.moveMouse(prePos.x, prePos.y);
         send({
-            c: COMMIST.MOUSE_MOVE, 
+            c: SYMBOL.MOUSE_MOVE, 
             p: {
                 x: x,
                 y: y
@@ -60,10 +60,10 @@ const clientHandler = {
     },
     handleWheel: function(event) {
         let msg = {
-            c: COMMIST.MOUSE_WHEEL,
+            c: SYMBOL.MOUSE_WHEEL,
             a: event.amount,
             r: event.rotation
-        }
+        };
         send(msg);
     },
     handleDrag: function() {
@@ -74,7 +74,7 @@ const clientHandler = {
         if(x === 0 && y === 0) { return; }
         robot.moveMouse(prePos.x, prePos.y);
         send({
-            c: COMMIST.MOSUE_DRAG,
+            c: SYMBOL.MOUSE_DRAG,
             p: {
                 x: x,
                 y: y
@@ -89,7 +89,7 @@ const clientHandler = {
             ncp.paste(function(nothing, copyText) {
                 if (copyText) {
                     send({
-                        c: COMMIST.COPY,
+                        c: SYMBOL.COPY,
                         s: copyText
                     });
                 }
@@ -104,7 +104,7 @@ const clientHandler = {
             // 普通键盘
             if (!isLock) { return; }
             let msg = {
-                c: COMMIST.KEY_DOWN,
+                c: SYMBOL.KEY_DOWN,
                 k: event.keycode,
                 m: {},
             };
@@ -145,7 +145,6 @@ const clientHandler = {
                 }
                 case ENTER_DIRECTION.BOTTOM: {
                     direction = ENTER_DIRECTION.BOTTOM;
-                    ENTER_DIRECTION.BOTTOM;
                     isEnter = y > screenHeight - OFFSET.LEAVE;
                     lockX = currPos.x;
                     lockY = screenHeight - OFFSET.LEAVE;
@@ -158,7 +157,7 @@ const clientHandler = {
                 // 激活服务端的举动
                 prePos = { x: lockX, y: lockY};
                 isLock = true;
-            })
+            });
             clientServer.leave(function() {
                 // 离开服务端的举动
                 isLock = false;
@@ -188,7 +187,7 @@ const clientHandler = {
             l('退出锁定模式');
         }
     }
-}
+};
 
 // 客户端事件监听
 const clientEventListener = {
@@ -216,10 +215,10 @@ const clientEventListener = {
                     l('down', JSON.stringify(event));
                 }
                 send({
-                    c: COMMIST.MOUSE_DOWN
+                    c: SYMBOL.MOUSE_DOWN
                 })
             }
-        })
+        });
         
         ioHook.on("mouseup", event => {
             if (isLockAvailable && isLock) {
@@ -228,10 +227,10 @@ const clientEventListener = {
                     l('up', JSON.stringify(event));
                 }
                 send({
-                    c: COMMIST.MOUSE_UP
+                    c: SYMBOL.MOUSE_UP
                 })
             }
-        })
+        });
         
         ioHook.on("mouseclick", event => {
             if (isLockAvailable && isLock) { 
@@ -247,12 +246,12 @@ const clientEventListener = {
                         robot.mouseClick();
                     }
                     send({
-                        c: COMMIST.MOUSE_CLICK,
+                        c: SYMBOL.MOUSE_CLICK,
                         b: event.button,
                     })
                 }
             }
-        })
+        });
         
         ioHook.on("mousedrag", event => {
             if (isLockAvailable && isLock) { 
@@ -261,7 +260,7 @@ const clientEventListener = {
                 }
                 throttleDrag();
             }
-        })
+        });
         
         ioHook.on("mousewheel", event => {
             if (isLockAvailable && isLock) { 
@@ -270,7 +269,7 @@ const clientEventListener = {
                 }
                 throttleWheel(event);
             }
-        })
+        });
         
         // 鼠标输入事件
         ioHook.on("keydown", event => {
@@ -278,7 +277,7 @@ const clientEventListener = {
                 l('keydown', JSON.stringify(event));
             }
             throttleKeyDown(event);
-        })
+        });
 
         ioHook.on('keyup', event => {
             if(dc.isDebug && dc.keydown) {    
@@ -286,16 +285,16 @@ const clientEventListener = {
             }
             if (isLock) {
                 let msg = {
-                    c: COMMIST.KEY_UP,
+                    c: SYMBOL.KEY_UP,
                     k: event.keycode,
-                }
+                };
                 send(msg);
             }
-        })
+        });
         
-        ioHook.start();        
+        ioHook.start(false);
     }
-}
+};
 
 const client = {
     init() {
@@ -308,6 +307,6 @@ const client = {
             lw('已和服务器失去连接');
         });
     }
-}
+};
 
 exports = module.exports = client;
